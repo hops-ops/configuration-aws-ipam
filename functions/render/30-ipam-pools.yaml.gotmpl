@@ -17,8 +17,8 @@
 
 ---
 
-apiVersion: vpc.aws.m.upbound.io/v1beta1
-kind: IPAMPool
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamPool
 metadata:
   name: {{ $poolResourceName }}
   annotations:
@@ -26,7 +26,6 @@ metadata:
   labels:
     {{- toYaml $poolLabels | nindent 4 }}
 spec:
-  deletionPolicy: {{ $deletionPolicy }}
   managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
   forProvider:
     addressFamily: ipv4
@@ -45,6 +44,29 @@ spec:
     {{- if $allocationMax }}
     allocationMaxNetmaskLength: {{ $allocationMax }}
     {{- end }}
+    tags:
+      {{- toYaml $poolTags | nindent 6 }}
+  providerConfigRef:
+    kind: ProviderConfig
+    name: {{ $providerConfigName }}
+
+---
+
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamPoolCidr
+metadata:
+  name: {{ printf "%s-cidr" $poolResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-pool-cidr-%s" $poolName) }}
+  labels:
+    {{- toYaml $poolLabels | nindent 4 }}
+spec:
+  managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
+  forProvider:
+    cidr: {{ $poolCidr }}
+    ipamPoolIdRef:
+      name: {{ $poolResourceName }}
+    region: {{ $poolRegion }}
     tags:
       {{- toYaml $poolTags | nindent 6 }}
   providerConfigRef:

@@ -3,18 +3,18 @@
 apiVersion: aws.hops.ops.com.ai/v1alpha1
 kind: IPAM
 status:
-  organizationName: {{ $organizationName }}
-  managementMode: {{ $managementMode }}
-  scope: {{ $scope }}
+  organizationName: {{ $organizationName | quote }}
+  managementMode: {{ $managementMode | quote }}
+  scope: {{ $scope | quote }}
   ipam:
-    name: {{ printf "%s-ipam" $organizationName }}
-    region: {{ $homeRegion }}
-    id: {{ $observedIpamId | default "" }}
-    arn: {{ $observedIpamArn | default "" }}
+    name: {{ printf "%s-ipam" $organizationName | quote }}
+    region: {{ $homeRegion | quote }}
+    id: {{ $observedIpamId | default "" | quote }}
+    arn: {{ $observedIpamArn | default "" | quote }}
     scope:
-      name: {{ printf "%s-ipam-private" $organizationName }}
-      id: {{ $observedIpamScopeId | default "" }}
-      arn: {{ $observedIpamScopeArn | default "" }}
+      name: {{ printf "%s-ipam-private" $organizationName | quote }}
+      id: {{ $observedIpamScopeId | default "" | quote }}
+      arn: {{ $observedIpamScopeArn | default "" | quote }}
     pools:
 {{- range $pool := $ipamPools }}
       {{- $poolName := $pool.name }}
@@ -25,12 +25,12 @@ status:
         {{- $poolId := $poolStatus.id | default "" }}
         {{- $poolArn := $poolStatus.arn | default "" }}
         {{- $poolCidr := $pool.cidr | default $pool.cidrBlock }}
-      - name: {{ $poolName }}
-        region: {{ $poolRegion }}
-        locale: {{ $poolLocale }}
-        id: {{ $poolId }}
-        arn: {{ $poolArn }}
-        cidr: {{ $poolCidr }}
+      - name: {{ $poolName | quote }}
+        region: {{ $poolRegion | quote }}
+        locale: {{ $poolLocale | quote }}
+        id: {{ $poolId | default "" | quote }}
+        arn: {{ $poolArn | default "" | quote }}
+        cidr: {{ $poolCidr | quote }}
         {{- if $pool.allocationDefaultNetmaskLength }}
         allocationDefaultNetmaskLength: {{ $pool.allocationDefaultNetmaskLength }}
         {{- else if $pool.allocationNetmaskLength }}
@@ -44,12 +44,22 @@ status:
         {{- end }}
       {{- end }}
 {{- end }}
-  ramShares:
+{{- $ramShareEntries := list }}
 {{- range $pool := $ipamPools }}
   {{- $poolName := $pool.name }}
   {{- if $poolName }}
-    {{- $shareStatus := get $ramShares $poolName | default (dict) }}
-  - poolName: {{ $poolName }}
-    shareArn: {{ $shareStatus.arn | default "" }}
+    {{- $poolShareTargets := $pool.ramShareTargets | default (list) }}
+    {{- if gt (len $poolShareTargets) 0 }}
+      {{- $shareStatus := get $ramShares $poolName | default (dict) }}
+      {{- $entry := dict "poolName" $poolName "shareArn" ($shareStatus.arn | default "") }}
+      {{- $ramShareEntries = append $ramShareEntries $entry }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- if gt (len $ramShareEntries) 0 }}
+  ramShares:
+  {{- range $entry := $ramShareEntries }}
+  - poolName: {{ $entry.poolName | quote }}
+    shareArn: {{ $entry.shareArn | quote }}
   {{- end }}
 {{- end }}

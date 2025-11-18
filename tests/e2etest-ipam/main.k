@@ -37,7 +37,6 @@ _items = [
                             }
                         }
                         managementPolicies: ["*"]
-                        deletionPolicy: "Delete"
                         ipam: {
                             homeRegion: "us-east-2"
                             pools: [

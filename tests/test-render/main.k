@@ -12,8 +12,8 @@ _items = [
             validate: True
             assertResources: [
                 {
-                    apiVersion: "vpc.aws.m.upbound.io/v1beta1"
-                    kind: "IPAM"
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpam"
                     metadata: {
                         name: "platform-ipam"
                         labels: {
@@ -37,8 +37,8 @@ _items = [
                     }
                 },
                 {
-                    apiVersion: "vpc.aws.m.upbound.io/v1beta1"
-                    kind: "IPAMPool"
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
                     metadata: {
                         name: "platform-platform-shared"
                         labels: {
@@ -59,6 +59,19 @@ _items = [
                             }
                         }
                     }
+                },
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPoolCidr"
+                    metadata: {
+                        name: "platform-platform-shared-cidr"
+                    }
+                    spec: {
+                        managementPolicies: ["*"]
+                        forProvider: {
+                            cidr: "10.0.0.0/8"
+                        }
+                    }
                 }
             ]
         }
@@ -73,8 +86,8 @@ _items = [
             validate: True
             assertResources: [
                 {
-                    apiVersion: "vpc.aws.m.upbound.io/v1beta1"
-                    kind: "IPAM"
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpam"
                     metadata: {
                         name: "workloads-ipam"
                     }
@@ -88,8 +101,8 @@ _items = [
                     }
                 },
                 {
-                    apiVersion: "vpc.aws.m.upbound.io/v1beta1"
-                    kind: "IPAMPool"
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
                     metadata: {
                         name: "workloads-workloads-east"
                     }
@@ -103,8 +116,20 @@ _items = [
                     }
                 },
                 {
-                    apiVersion: "vpc.aws.m.upbound.io/v1beta1"
-                    kind: "IPAMPool"
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPoolCidr"
+                    metadata: {
+                        name: "workloads-workloads-east-cidr"
+                    }
+                    spec: {
+                        forProvider: {
+                            cidr: "10.4.0.0/14"
+                        }
+                    }
+                },
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
                     metadata: {
                         name: "workloads-workloads-west"
                     }
@@ -113,6 +138,18 @@ _items = [
                             cidr: "10.8.0.0/14"
                             allocationDefaultNetmaskLength: 20
                             locale: "us-west-2"
+                        }
+                    }
+                },
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPoolCidr"
+                    metadata: {
+                        name: "workloads-workloads-west-cidr"
+                    }
+                    spec: {
+                        forProvider: {
+                            cidr: "10.8.0.0/14"
                         }
                     }
                 }

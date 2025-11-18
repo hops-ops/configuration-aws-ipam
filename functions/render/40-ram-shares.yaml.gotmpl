@@ -29,7 +29,6 @@ metadata:
     hops.ops.com.ai/organization: {{ $organizationName }}
     aws.hops.ops.com.ai/ipam-pool: {{ $poolName }}
 spec:
-  deletionPolicy: {{ $deletionPolicy }}
   managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
   forProvider:
     allowExternalPrincipals: false
@@ -62,7 +61,6 @@ metadata:
     hops.ops.com.ai/organization: {{ $organizationName }}
     aws.hops.ops.com.ai/ipam-pool: {{ $poolName }}
 spec:
-  deletionPolicy: {{ $deletionPolicy }}
   managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
   forProvider:
     principal: {{ $principal }}

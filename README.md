@@ -16,7 +16,7 @@
 
 - Crossplane v1.15+ running in your control plane.
 - Crossplane packages:
-  - `provider-aws-vpc` (≥ v2.2.0)
+  - `provider-aws-ec2` (≥ v2.2.0)
   - `provider-aws-ram` (≥ v2.2.0)
   - `function-auto-ready` (≥ v0.5.1)
 
@@ -64,9 +64,9 @@ spec:
 
 Running `up composition render apis/ipams/composition.yaml examples/ipams/example-minimal.yaml` emits:
 
-- `vpc.aws.m.upbound.io/v1beta1, Kind=IPAM`
-- `vpc.aws.m.upbound.io/v1beta1, Kind=IPAMScope`
-- one `IPAMPool` per entry in `spec.forProvider.pools`
+- `ec2.aws.m.upbound.io/v1beta1, Kind=VPCIpam`
+- `ec2.aws.m.upbound.io/v1beta1, Kind=VPCIpamScope`
+- one `VPCIpamPool` + `VPCIpamPoolCidr` per entry in `spec.forProvider.pools`
 - optional `ram.aws.m.upbound.io/v1beta1` ResourceShare + PrincipalAssociation resources for pools that declare `ramShareTargets` while `scope=global-organization`
 
 The rendered resources include the default tag map plus any caller-supplied tags/labels so selectors downstream stay simple.

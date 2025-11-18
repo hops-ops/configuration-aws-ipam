@@ -5,8 +5,8 @@
 
 ---
 
-apiVersion: vpc.aws.m.upbound.io/v1beta1
-kind: IPAM
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpam
 metadata:
   name: {{ printf "%s-ipam" $organizationName }}
   annotations:
@@ -14,7 +14,6 @@ metadata:
   labels:
     hops.ops.com.ai/organization: {{ $organizationName }}
 spec:
-  deletionPolicy: {{ $deletionPolicy }}
   managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
   forProvider:
     description: {{ printf "%s IPAM" $organizationName }}
@@ -31,8 +30,8 @@ spec:
 
 ---
 
-apiVersion: vpc.aws.m.upbound.io/v1beta1
-kind: IPAMScope
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamScope
 metadata:
   name: {{ printf "%s-ipam-private" $organizationName }}
   annotations:
@@ -41,7 +40,6 @@ metadata:
     hops.ops.com.ai/organization: {{ $organizationName }}
     hops.ops.com.ai/ipam-scope: default-private
 spec:
-  deletionPolicy: {{ $deletionPolicy }}
   managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
   forProvider:
     description: Default private scope for {{ $organizationName }}

@@ -32,10 +32,6 @@ spec:
                 - self
                 - managed
                 default: self
-              deletionPolicy:
-                type: string
-                description: Delete or Orphan composed resources when this IPAM is removed.
-                default: Delete
               managementPolicies:
                 type: array
                 description: Management operations permitted on composed resources. Use ["*"] for full management or omit Delete to orphan.
@@ -165,6 +161,8 @@ spec:
               ipam:
                 type: object
                 properties:
+                  name:
+                    type: string
                   region:
                     type: string
                   arn:
