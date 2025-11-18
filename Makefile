@@ -50,3 +50,4 @@ generate-function:
 
 e2e:
 	up test run $(E2E_TESTS) --e2e
+
