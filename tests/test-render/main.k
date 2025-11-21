@@ -308,7 +308,7 @@ _items = [
                     apiVersion: "protection.crossplane.io/v1beta1"
                     kind: "Usage"
                     metadata: {
-                        name: "workloads-ipam-scope-usage"
+                        name: "of-ipam-workloads-ipam-by-scope-workloads-ipam-private"
                     }
                     spec: {
                         replayDeletion: True
@@ -332,7 +332,7 @@ _items = [
                     apiVersion: "protection.crossplane.io/v1beta1"
                     kind: "Usage"
                     metadata: {
-                        name: "workloads-workloads-east-pool-usage"
+                        name: "of-ipam-scope-workloads-ipam-private-by-pool-workloads-workloads-east"
                     }
                     spec: {
                         replayDeletion: True
@@ -356,7 +356,7 @@ _items = [
                     apiVersion: "protection.crossplane.io/v1beta1"
                     kind: "Usage"
                     metadata: {
-                        name: "workloads-workloads-west-pool-usage"
+                        name: "of-ipam-scope-workloads-ipam-private-by-pool-workloads-workloads-west"
                     }
                     spec: {
                         replayDeletion: True
@@ -380,7 +380,7 @@ _items = [
                     apiVersion: "protection.crossplane.io/v1beta1"
                     kind: "Usage"
                     metadata: {
-                        name: "workloads-workloads-east-pool-cidr-usage"
+                        name: "of-ipam-pool-workloads-workloads-east-by-pool-cidr-workloads-workloads-east-cidr"
                     }
                     spec: {
                         replayDeletion: True
@@ -404,7 +404,7 @@ _items = [
                     apiVersion: "protection.crossplane.io/v1beta1"
                     kind: "Usage"
                     metadata: {
-                        name: "workloads-workloads-west-pool-cidr-usage"
+                        name: "of-ipam-pool-workloads-workloads-west-by-pool-cidr-workloads-workloads-west-cidr"
                     }
                     spec: {
                         replayDeletion: True
@@ -428,7 +428,7 @@ _items = [
                     apiVersion: "protection.crossplane.io/v1beta1"
                     kind: "Usage"
                     metadata: {
-                        name: "workloads-workloads-east-share-usage"
+                        name: "of-ipam-pool-workloads-workloads-east-by-ram-share-workloads-share-workloads-east"
                     }
                     spec: {
                         replayDeletion: True
@@ -452,7 +452,7 @@ _items = [
                     apiVersion: "protection.crossplane.io/v1beta1"
                     kind: "Usage"
                     metadata: {
-                        name: "workloads-workloads-west-share-usage"
+                        name: "of-ipam-pool-workloads-workloads-west-by-ram-share-workloads-share-workloads-west"
                     }
                     spec: {
                         replayDeletion: True
@@ -476,7 +476,7 @@ _items = [
                     apiVersion: "protection.crossplane.io/v1beta1"
                     kind: "Usage"
                     metadata: {
-                        name: "workloads-workloads-east-principal-0-usage"
+                        name: "of-ram-share-workloads-share-workloads-east-by-ram-principal-workloads-principal-workloads-east-0"
                     }
                     spec: {
                         replayDeletion: True
@@ -500,7 +500,7 @@ _items = [
                     apiVersion: "protection.crossplane.io/v1beta1"
                     kind: "Usage"
                     metadata: {
-                        name: "workloads-workloads-west-principal-0-usage"
+                        name: "of-ram-share-workloads-share-workloads-west-by-ram-principal-workloads-principal-workloads-west-0"
                     }
                     spec: {
                         replayDeletion: True

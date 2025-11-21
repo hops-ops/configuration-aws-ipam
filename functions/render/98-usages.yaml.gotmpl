@@ -13,7 +13,7 @@
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ printf "%s-ipam-scope-usage" $organizationName }}
+  name: {{ printf "of-ipam-%s-by-scope-%s" $ipamResourceName $ipamScopeResourceName }}
   annotations:
     {{ setResourceNameAnnotation "ipam-scope-usage" }}
 spec:
@@ -34,6 +34,7 @@ spec:
 {{ range $pool := $ipamPools }}
   {{- $poolName := $pool.name }}
   {{- $poolResourceName := printf "%s-%s" $organizationName $poolName }}
+  {{- $poolCidrResourceName := printf "%s-%s-cidr" $organizationName $poolName }}
   {{- $poolKey := printf "ipam-pool-%s" $poolName }}
   {{- $poolReady := get $resourceReadiness $poolKey | default false }}
   {{- $poolCidrKey := printf "ipam-pool-cidr-%s" $poolName }}
@@ -45,7 +46,7 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ printf "%s-%s-pool-usage" $organizationName $poolName }}
+  name: {{ printf "of-ipam-scope-%s-by-pool-%s" $ipamScopeResourceName $poolResourceName }}
   annotations:
     {{ setResourceNameAnnotation (printf "ipam-pool-usage-%s" $poolName) }}
 spec:
@@ -70,7 +71,7 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ printf "%s-%s-pool-cidr-usage" $organizationName $poolName }}
+  name: {{ printf "of-ipam-pool-%s-by-pool-cidr-%s" $poolResourceName $poolCidrResourceName }}
   annotations:
     {{ setResourceNameAnnotation (printf "ipam-pool-cidr-usage-%s" $poolName) }}
 spec:
@@ -79,7 +80,7 @@ spec:
     apiVersion: ec2.aws.m.upbound.io/v1beta1
     kind: VPCIpamPoolCidr
     resourceRef:
-      name: {{ printf "%s-%s-cidr" $organizationName $poolName }}
+      name: {{ $poolCidrResourceName }}
   of:
     apiVersion: ec2.aws.m.upbound.io/v1beta1
     kind: VPCIpamPool
@@ -102,7 +103,7 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ printf "%s-%s-share-usage" $organizationName $poolName }}
+  name: {{ printf "of-ipam-pool-%s-by-ram-share-%s" $poolResourceName $shareResourceName }}
   annotations:
     {{ setResourceNameAnnotation (printf "ipam-share-usage-%s" $poolName) }}
 spec:
@@ -132,7 +133,7 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ printf "%s-%s-principal-%d-usage" $organizationName $poolName $index }}
+  name: {{ printf "of-ram-share-%s-by-ram-principal-%s" $shareResourceName $principalResourceName }}
   annotations:
     {{ setResourceNameAnnotation (printf "ipam-principal-usage-%s-%d" $poolName $index) }}
 spec:
