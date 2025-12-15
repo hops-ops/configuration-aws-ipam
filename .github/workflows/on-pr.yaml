@@ -25,21 +25,25 @@ permissions:
 
 jobs:
   validate:
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/validate.yaml@v0.8.3
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/validate.yaml@v1.1.0
     with:
       examples: |
         [
-          "examples/ipams/example-minimal.yaml",
-          "examples/ipams/example-multi-region.yaml"
+          { "example": "examples/ipams/example-minimal.yaml" },
+          { "example": "examples/ipams/example-multi-region.yaml" },
+          { "example": "examples/ipams/example-private-ipv6.yaml" },
+          { "example": "examples/ipams/example-private-ipv6.yaml", "observed_resources": "examples/observed-resources/example-private-ipv6/steps/1" },
+          { "example": "examples/ipams/example-private-ipv6.yaml", "observed_resources": "examples/observed-resources/example-private-ipv6/steps/2" },
+          { "example": "examples/ipams/example-private-ipv6.yaml", "observed_resources": "examples/observed-resources/example-private-ipv6/steps/3" }
         ]
       api_path: apis/ipams
       error_on_missing_schemas: true
 
   test:
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/test.yaml@v0.8.3
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/test.yaml@v1.1.0
 
   e2e:
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/e2e-aws.yaml@v0.8.3
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/e2e-aws.yaml@v1.1.0
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -49,7 +53,7 @@ jobs:
       - validate
       - test
       - e2e
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/publish.yaml@v0.8.3
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/publish.yaml@v1.1.0
     secrets: inherit
     with:
       tag: pr-${{ github.event.pull_request.number }}-${{ github.sha }}

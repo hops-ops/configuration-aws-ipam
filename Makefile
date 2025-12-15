@@ -27,6 +27,22 @@ render-all:
 		up composition render $(COMPOSITION) $$example; \
 	done
 
+# Multi-step rendering for example-private-ipv6
+render-example-private-ipv6:
+	up composition render --xrd=$(DEFINITION) $(COMPOSITION) examples/ipams/example-private-ipv6.yaml
+
+render-example-private-ipv6-step-1:
+	up composition render --xrd=$(DEFINITION) $(COMPOSITION) examples/ipams/example-private-ipv6.yaml \
+		--observed-resources=examples/observed-resources/example-private-ipv6/steps/1/
+
+render-example-private-ipv6-step-2:
+	up composition render --xrd=$(DEFINITION) $(COMPOSITION) examples/ipams/example-private-ipv6.yaml \
+		--observed-resources=examples/observed-resources/example-private-ipv6/steps/2/
+
+render-example-private-ipv6-step-3:
+	up composition render --xrd=$(DEFINITION) $(COMPOSITION) examples/ipams/example-private-ipv6.yaml \
+		--observed-resources=examples/observed-resources/example-private-ipv6/steps/3/
+
 test:
 	up test run $(RENDER_TESTS)
 
@@ -37,6 +53,26 @@ validate-composition:
 
 validate-examples:
 	crossplane beta validate $(XRD_DIR) examples/ipams
+
+# Validation with observed resources
+validate-example-private-ipv6:
+	up composition render --xrd=$(DEFINITION) $(COMPOSITION) examples/ipams/example-private-ipv6.yaml \
+		--include-full-xr --quiet | crossplane beta validate $(XRD_DIR) --error-on-missing-schemas -
+
+validate-example-private-ipv6-step-1:
+	up composition render --xrd=$(DEFINITION) $(COMPOSITION) examples/ipams/example-private-ipv6.yaml \
+		--observed-resources=examples/observed-resources/example-private-ipv6/steps/1/ \
+		--include-full-xr --quiet | crossplane beta validate $(XRD_DIR) --error-on-missing-schemas -
+
+validate-example-private-ipv6-step-2:
+	up composition render --xrd=$(DEFINITION) $(COMPOSITION) examples/ipams/example-private-ipv6.yaml \
+		--observed-resources=examples/observed-resources/example-private-ipv6/steps/2/ \
+		--include-full-xr --quiet | crossplane beta validate $(XRD_DIR) --error-on-missing-schemas -
+
+validate-example-private-ipv6-step-3:
+	up composition render --xrd=$(DEFINITION) $(COMPOSITION) examples/ipams/example-private-ipv6.yaml \
+		--observed-resources=examples/observed-resources/example-private-ipv6/steps/3/ \
+		--include-full-xr --quiet | crossplane beta validate $(XRD_DIR) --error-on-missing-schemas -
 
 publish:
 	@if [ -z "$(tag)" ]; then echo "Error: tag is not set. Usage: make publish tag=<version>"; exit 1; fi
