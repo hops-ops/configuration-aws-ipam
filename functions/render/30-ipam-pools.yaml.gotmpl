@@ -3,8 +3,17 @@
 
 {{ range $pool := $ipamPools }}
   {{- $poolName := $pool.name }}
-  {{- $poolCidr := $pool.cidr | default $pool.cidrBlock }}
-  {{- if and $poolName $poolCidr }}
+  {{- $poolCidr := $pool.cidr | default $pool.cidrBlock | default "" }}
+  {{- $addressFamily := $pool.addressFamily | default "ipv4" }}
+  {{- $amazonProvided := $pool.amazonProvidedIpv6CidrBlock | default false }}
+  {{- $poolScope := $pool.scope | default "private" }}
+  {{- $publicIpSource := $pool.publicIpSource | default "" }}
+  {{- $awsService := $pool.awsService | default "" }}
+
+  {{- /* Pool is valid if it has a name AND (has cidr OR is amazon-provided IPv6) */}}
+  {{- $hasValidCidr := or $poolCidr $amazonProvided }}
+
+  {{- if and $poolName $hasValidCidr }}
     {{- $poolRegion := $pool.region | default $pool.locale | default $homeRegion }}
     {{- $poolLocale := $pool.locale | default $poolRegion }}
     {{- $poolLabels := merge (dict "hops.ops.com.ai/organization" $organizationName "aws.hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default (dict)) }}
@@ -14,6 +23,12 @@
     {{- $allocationDefault := $pool.allocationDefaultNetmaskLength | default $pool.allocationNetmaskLength }}
     {{- $allocationMin := $pool.allocationMinNetmaskLength }}
     {{- $allocationMax := $pool.allocationMaxNetmaskLength }}
+
+    {{- /* Determine which scope to reference based on pool scope */}}
+    {{- $scopeRefName := printf "%s-ipam-private" $organizationName }}
+    {{- if eq $poolScope "public" }}
+      {{- $scopeRefName = printf "%s-ipam-public" $organizationName }}
+    {{- end }}
 
 ---
 
@@ -28,10 +43,10 @@ metadata:
 spec:
   managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
   forProvider:
-    addressFamily: ipv4
+    addressFamily: {{ $addressFamily }}
     description: {{ $poolDescription }}
     ipamScopeIdRef:
-      name: {{ printf "%s-ipam-private" $organizationName }}
+      name: {{ $scopeRefName }}
     locale: {{ $poolLocale }}
     region: {{ $poolRegion }}
     {{- if $allocationDefault }}
@@ -43,12 +58,22 @@ spec:
     {{- if $allocationMax }}
     allocationMaxNetmaskLength: {{ $allocationMax }}
     {{- end }}
+    {{- if and (eq $addressFamily "ipv6") $amazonProvided }}
+    {{- if $publicIpSource }}
+    publicIpSource: {{ $publicIpSource }}
+    {{- end }}
+    {{- if $awsService }}
+    awsService: {{ $awsService }}
+    {{- end }}
+    {{- end }}
     tags:
       {{- toYaml $poolTags | nindent 6 }}
   providerConfigRef:
     kind: ProviderConfig
     name: {{ $providerConfigName }}
 
+    {{- /* Only create VPCIpamPoolCidr if we have an explicit CIDR (not amazon-provided) */}}
+    {{- if $poolCidr }}
 ---
 
 apiVersion: ec2.aws.m.upbound.io/v1beta1
@@ -69,6 +94,7 @@ spec:
   providerConfigRef:
     kind: ProviderConfig
     name: {{ $providerConfigName }}
+    {{- end }}
 
   {{- end }}
 {{ end }}

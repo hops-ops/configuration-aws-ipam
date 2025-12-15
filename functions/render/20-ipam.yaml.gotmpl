@@ -52,4 +52,30 @@ spec:
     kind: ProviderConfig
     name: {{ $providerConfigName }}
 
+{{ if $needsPublicScope }}
+---
+
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamScope
+metadata:
+  name: {{ printf "%s-ipam-public" $organizationName }}
+  annotations:
+    {{ setResourceNameAnnotation "ipam-public-scope" }}
+  labels:
+    hops.ops.com.ai/organization: {{ $organizationName }}
+    hops.ops.com.ai/ipam-scope: default-public
+spec:
+  managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
+  forProvider:
+    description: Default public scope for {{ $organizationName }}
+    ipamIdRef:
+      name: {{ printf "%s-ipam" $organizationName }}
+    region: {{ $homeRegion }}
+    tags:
+      {{- toYaml $defaultAWSTags | nindent 6 }}
+  providerConfigRef:
+    kind: ProviderConfig
+    name: {{ $providerConfigName }}
+{{ end }}
+
 {{ end }}

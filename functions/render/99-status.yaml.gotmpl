@@ -30,7 +30,9 @@ status:
         locale: {{ $poolLocale | quote }}
         id: {{ $poolId | default "" | quote }}
         arn: {{ $poolArn | default "" | quote }}
+        {{- if $poolCidr }}
         cidr: {{ $poolCidr | quote }}
+        {{- end }}
         {{- if $pool.allocationDefaultNetmaskLength }}
         allocationDefaultNetmaskLength: {{ $pool.allocationDefaultNetmaskLength }}
         {{- else if $pool.allocationNetmaskLength }}

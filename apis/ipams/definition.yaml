@@ -56,21 +56,23 @@ spec:
                 type: object
                 description: Provider-specific settings.
                 required:
-                - delegatedAdminAccountRef
                 - pools
                 properties:
                   scope:
                     type: string
-                    description: Controls whether the IPAM only serves the delegated organization or shares pools globally.
+                    description: |
+                      IPAM scope. Use "private" for single-account setups.
+                      Use "delegated-organization" or "global-organization" for multi-account with Organization.
                     enum:
+                    - private
                     - delegated-organization
                     - global-organization
-                    default: delegated-organization
+                    default: private
                   delegatedAdminAccountRef:
                     type: object
-                    description: Reference to the Account composite that granted IPAM delegated admin permissions.
-                    required:
-                    - name
+                    description: |
+                      Reference to the Account composite that granted IPAM delegated admin permissions.
+                      Required for delegated-organization and global-organization scopes.
                     properties:
                       name:
                         type: string
@@ -91,17 +93,39 @@ spec:
                       type: object
                       required:
                       - name
-                      - cidr
+                      x-kubernetes-preserve-unknown-fields: true
                       properties:
                         name:
                           type: string
                           description: Unique identifier for the pool used in downstream selectors.
                         cidr:
                           type: string
-                          description: Base CIDR carved from the pool.
-                        cidrBlock:
+                          description: Base CIDR for the pool. Required for IPv4, optional for IPv6 with amazonProvidedIpv6CidrBlock.
+                        amazonProvidedIpv6CidrBlock:
+                          type: boolean
+                          description: Request Amazon-provided IPv6 CIDR block (for public IPv6 pools).
+                        addressFamily:
                           type: string
-                          description: Deprecated alias for cidr maintained for backwards compatibility.
+                          description: Address family for this pool (ipv4 or ipv6). Defaults to ipv4.
+                          enum:
+                          - ipv4
+                          - ipv6
+                          default: ipv4
+                        publicIpSource:
+                          type: string
+                          description: Source of public IP addresses for IPv6 pools (amazon or byoip).
+                          enum:
+                          - amazon
+                          - byoip
+                        awsService:
+                          type: string
+                          description: AWS service for IPv6 allocation (ec2 for VPC/EC2).
+                        scope:
+                          type: string
+                          description: Pool scope (private or public). Defaults to private.
+                          enum:
+                          - private
+                          - public
                         region:
                           type: string
                           description: AWS region that owns the pool. Defaults to aws.config.region.
