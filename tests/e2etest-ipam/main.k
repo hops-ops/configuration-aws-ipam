@@ -52,9 +52,16 @@ _ipam_external_name = "ipam-0573c7815d0a36e00"
 _env_ipam_external_name = file.read("secrets/env/ipam_external_name") if file.exists("secrets/env/ipam_external_name") else ""
 print("env_ipam_external_name: " + _env_ipam_external_name)
 
-# _ipv4_pool_external_name = file.read("secrets/env/ipv4_pool_external_name") if file.exists("secrets/env/ipv4_pool_external_name") else ""
-# _ipv6_public_pool_external_name = file.read("secrets/env/ipv6_public_pool_external_name") if file.exists("secrets/env/ipv6_public_pool_external_name") else ""
-# _ipv6_private_pool_external_name = file.read("secrets/env/ipv6_private_pool_external_name") if file.exists("secrets/env/ipv6_private_pool_external_name") else ""
+_ipv4_pool_external_name = ""
+_ipv6_public_pool_external_name = ""
+_ipv6_private_pool_external_name = ""
+
+_env_ipv4_pool_external_name = file.read("secrets/env/ipv4_pool_external_name") if file.exists("secrets/env/ipv4_pool_external_name") else ""
+_env_ipv6_public_pool_external_name = file.read("secrets/env/ipv6_public_pool_external_name") if file.exists("secrets/env/ipv6_public_pool_external_name") else ""
+_env_ipv6_private_pool_external_name = file.read("secrets/env/ipv6_private_pool_external_name") if file.exists("secrets/env/ipv6_private_pool_external_name") else ""
+print("env_ipv4_pool_external_name: " + _env_ipv4_pool_external_name)
+print("env_ipv6_public_pool_external_name: " + _env_ipv6_public_pool_external_name)
+print("env_ipv6_private_pool_external_name: " + _env_ipv6_private_pool_external_name)
 
 _items = [
     metav1alpha1.E2ETest{
