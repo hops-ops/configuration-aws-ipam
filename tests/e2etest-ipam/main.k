@@ -54,8 +54,9 @@ _ipam_external_name = "ipam-0573c7815d0a36e00"
 _ipv4_pool_external_name = "ipam-pool-0a82c73b97dc0dabb"
 _ipv4_cidr_external_name = "10.0.0.0/8" + "_" + _ipv4_pool_external_name
 
-# IPv6 public pool (no cidrExternalName - uses amazonProvidedIpv6CidrBlock)
+# IPv6 public pool - cidrExternalName format: cidr_pool-id
 _ipv6_public_pool_external_name = "ipam-pool-06b3ec78deea8bcb9"
+_ipv6_public_cidr_external_name = "2600:1f26:47:c000::/52" + "_" + _ipv6_public_pool_external_name
 
 # IPv6 private pool (ULA) - cidrExternalName format: cidr_pool-id
 _ipv6_private_pool_external_name = "ipam-pool-0decd6c5216660c74"
@@ -124,6 +125,8 @@ _items = [
                                 description: "Public IPv6 pool (Amazon GUA)"
                                 if _ipv6_public_pool_external_name:
                                     externalName: _ipv6_public_pool_external_name
+                                if _ipv6_public_cidr_external_name:
+                                    cidrExternalName: _ipv6_public_cidr_external_name
                                 labels: {
                                     "address-family": "ipv6"
                                     "ipv6-type": "public"
