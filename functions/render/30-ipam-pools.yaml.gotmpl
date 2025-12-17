@@ -108,9 +108,9 @@ spec:
     kind: ProviderConfig
     name: {{ $providerConfigName }}
 
-    {{- /* Create VPCIpamPoolCidr if we have explicit CIDR or netmaskLength (not amazon-provided) */}}
+    {{- /* Create VPCIpamPoolCidr if we have explicit CIDR, netmaskLength, or amazonProvidedIpv6CidrBlock */}}
     {{- $poolCidrExternalName := $pool.cidrExternalName | default "" }}
-    {{- $needsCidrResource := or $poolCidr $poolNetmaskLength }}
+    {{- $needsCidrResource := or $poolCidr $poolNetmaskLength $amazonProvided }}
     {{- if $needsCidrResource }}
 ---
 
@@ -133,6 +133,7 @@ spec:
     {{- else if $poolNetmaskLength }}
     netmaskLength: {{ $poolNetmaskLength }}
     {{- end }}
+    {{- /* For amazonProvidedIpv6CidrBlock, no cidr/netmaskLength - AWS provisions automatically */}}
     ipamPoolIdRef:
       name: {{ $poolResourceName }}
     region: {{ $poolRegion }}

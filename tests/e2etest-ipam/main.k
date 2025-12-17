@@ -52,14 +52,14 @@ _ipam_external_name = "ipam-0573c7815d0a36e00"
 
 # IPv4 pool (cidrExternalName format: cidr_pool-id)
 _ipv4_pool_external_name = "ipam-pool-0a82c73b97dc0dabb"
-_ipv4_cidr_external_name = "10.0.0.0/8_ipam-pool-0a82c73b97dc0dabb"
+_ipv4_cidr_external_name = "10.0.0.0/8" + "_" + _ipv4_pool_external_name
 
 # IPv6 public pool (no cidrExternalName - uses amazonProvidedIpv6CidrBlock)
 _ipv6_public_pool_external_name = "ipam-pool-06b3ec78deea8bcb9"
 
 # IPv6 private pool (ULA) - cidrExternalName format: cidr_pool-id
 _ipv6_private_pool_external_name = "ipam-pool-0decd6c5216660c74"
-_ipv6_private_cidr_external_name = ""  # e.g., fd00:abc::/48_ipam-pool-xxx (get cidr from AWS after creation)
+_ipv6_private_cidr_external_name = "fdc4:f045:5323::/48" + "_" + _ipv6_private_pool_external_name 
 
 _items = [
     metav1alpha1.E2ETest{
