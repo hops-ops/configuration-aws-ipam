@@ -1,3 +1,19 @@
+# e2etest-ipam - Persistent IPAM for dual-stack VPC provisioning
+# ==============================================================
+# Creates IPAM with IPv4 + IPv6 pools for VPC/subnet allocation.
+# Resources are orphaned via managementPolicies (no Delete) for reuse.
+#
+# After first run, update externalName fields with actual IDs to import.
+# These same resources are used by aws-foundation e2e test.
+#
+# Pools created (persistent):
+# - ipv4: 10.0.0.0/8 for VPC IPv4 CIDRs
+# - ipv6-public: Amazon-provided GUA for internet-routable workloads
+# - ipv6-private: fd00:hops::/48 ULA for internal services
+#
+# Pools created (ephemeral - deleted after test):
+# - aws-ipam-<timestamp>: test pool to verify create/delete cycle
+
 import base64
 import datetime
 import file
@@ -6,12 +22,36 @@ import models.ai.com.ops.hops.aws.v1alpha1 as hops
 import models.io.upbound.dev.meta.v1alpha1 as metav1alpha1
 
 _now = str(int(math.floor(datetime.ticks())))
-_org_name = "hops-e2e-ipam-org-" + _now
-_composite_name = "hops-e2e-ipam-" + _now
-_provider_config_name = "ipam-provider-" + _now
 
 _creds = file.read("secrets/aws-creds")
 _base64_creds = base64.encode(_creds)
+
+# =============================================================================
+# Configuration - shared with aws-foundation e2e test
+# =============================================================================
+
+_org_name = "hops"
+_composite_name = "hops-e2e-ipam"
+_home_region = "us-east-2"
+
+# Orphan management policies - no Delete means resources persist
+_persist = ["Create", "Observe", "Update", "LateInitialize"]
+
+# Ephemeral test pool name - deleted after test
+_test_pool_name = "aws-ipam-" + _now
+
+# =============================================================================
+# Existing resource IDs (update after first successful run)
+# =============================================================================
+# After running once, get IDs with:
+#   aws ec2 describe-ipams --query 'Ipams[*].[IpamId,Tags]'
+#   aws ec2 describe-ipam-pools --query 'IpamPools[*].[IpamPoolId,Description]'
+#
+# _ipam_external_name = "ipam-0123456789abcdef0"
+_ipam_external_name = file.read("secrets/env/ipam_external_name") if file.exists("secrets/env/ipam_external_name") else ""
+_ipv4_pool_external_name = file.read("secrets/env/ipv4_pool_external_name") if file.exists("secrets/env/ipv4_pool_external_name") else ""
+_ipv6_public_pool_external_name = file.read("secrets/env/ipv6_public_pool_external_name") if file.exists("secrets/env/ipv6_public_pool_external_name") else ""
+_ipv6_private_pool_external_name = file.read("secrets/env/ipv6_private_pool_external_name") if file.exists("secrets/env/ipv6_private_pool_external_name") else ""
 
 _items = [
     metav1alpha1.E2ETest{
@@ -27,24 +67,102 @@ _items = [
                     }
                     spec: {
                         organizationName: _org_name
-                        providerConfigName: _provider_config_name
-                        managementPolicies: ["*"]
+                        providerConfigName: "default"
+                        managementPolicies: _persist
                         managementMode: "self"
-                        delegatedAdminAccountRef: {
-                            name: _org_name
-                        }
-                        homeRegion: "us-east-2"
-                        operatingRegions: ["us-east-2"]
+                        scope: "private"
+                        homeRegion: _home_region
+                        operatingRegions: [_home_region]
+                        if _ipam_external_name:
+                            externalName: _ipam_external_name
                         pools: [
+                            # IPv4 pool for VPCs
                             {
-                                name: "shared"
-                                cidr: "10.16.0.0/16"
-                                allocationDefaultNetmaskLength: 24
+                                name: "ipv4"
+                                addressFamily: "ipv4"
+                                region: _home_region
+                                cidr: "10.0.0.0/8"
+                                managementPolicies: _persist
+                                allocationDefaultNetmaskLength: 20
+                                allocationMinNetmaskLength: 16
+                                allocationMaxNetmaskLength: 24
+                                description: "IPv4 pool for VPCs"
+                                if _ipv4_pool_external_name:
+                                    externalName: _ipv4_pool_external_name
                                 labels: {
-                                    purpose: "e2e"
+                                    "address-family": "ipv4"
                                 }
                                 tags: {
-                                    owner: "ipam-e2e"
+                                    purpose: "vpc-ipv4"
+                                }
+                            },
+                            # IPv6 Public Pool (Amazon-provided GUA for EKS/EC2)
+                            {
+                                name: "ipv6-public"
+                                addressFamily: "ipv6"
+                                scope: "public"
+                                region: _home_region
+                                locale: _home_region
+                                amazonProvidedIpv6CidrBlock: True
+                                publicIpSource: "amazon"
+                                awsService: "ec2"
+                                managementPolicies: _persist
+                                allocationDefaultNetmaskLength: 56
+                                allocationMinNetmaskLength: 52
+                                allocationMaxNetmaskLength: 60
+                                description: "Public IPv6 pool (Amazon GUA)"
+                                if _ipv6_public_pool_external_name:
+                                    externalName: _ipv6_public_pool_external_name
+                                labels: {
+                                    "address-family": "ipv6"
+                                    "ipv6-type": "public"
+                                }
+                                tags: {
+                                    purpose: "vpc-ipv6-public"
+                                }
+                            },
+                            # IPv6 Private Pool (ULA for internal services)
+                            {
+                                name: "ipv6-private"
+                                addressFamily: "ipv6"
+                                scope: "private"
+                                region: _home_region
+                                locale: _home_region
+                                cidr: "fd00:hops::/48"
+                                managementPolicies: _persist
+                                allocationDefaultNetmaskLength: 56
+                                allocationMinNetmaskLength: 48
+                                allocationMaxNetmaskLength: 64
+                                description: "Private IPv6 pool (ULA)"
+                                if _ipv6_private_pool_external_name:
+                                    externalName: _ipv6_private_pool_external_name
+                                labels: {
+                                    "address-family": "ipv6"
+                                    "ipv6-type": "private"
+                                }
+                                tags: {
+                                    purpose: "vpc-ipv6-private"
+                                }
+                            },
+                            # Ephemeral test pool - deleted after test run
+                            {
+                                name: _test_pool_name
+                                addressFamily: "ipv4"
+                                region: _home_region
+                                cidr: "172.31.0.0/16"
+                                # Full management - gets deleted
+                                managementPolicies: ["*"]
+                                allocationDefaultNetmaskLength: 24
+                                allocationMinNetmaskLength: 20
+                                allocationMaxNetmaskLength: 28
+                                description: "Ephemeral test pool - " + _test_pool_name
+                                labels: {
+                                    "ephemeral": "true"
+                                    "test-run": _now
+                                }
+                                tags: {
+                                    purpose: "e2e-test"
+                                    "test-run": _now
                                 }
                             }
                         ]
@@ -67,7 +185,7 @@ _items = [
                     apiVersion: "aws.m.upbound.io/v1beta1"
                     kind: "ProviderConfig"
                     metadata: {
-                        name: _provider_config_name
+                        name: "default"
                         namespace: "default"
                     }
                     spec: {
@@ -82,7 +200,7 @@ _items = [
                     }
                 }
             ]
-            skipDelete: False
+            skipDelete: True
             timeoutSeconds: 4500
         }
     }
