@@ -10,6 +10,33 @@ _items = [
             xrdPath: "apis/ipams/definition.yaml"
             timeoutSeconds: 120
             validate: True
+            observedResources: [
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpam"
+                    metadata: {
+                        name: "platform-ipam"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam"
+                            "crossplane.io/composition-resource-name": "ipam"
+                        }
+                    }
+                    status: {
+                        conditions: [
+                            {
+                                type: "Ready"
+                                status: "True"
+                            }
+                        ]
+                        atProvider: {
+                            id: "ipam-0123456789abcdef0"
+                            arn: "arn:aws:ec2:us-west-2:123456789012:ipam/ipam-0123456789abcdef0"
+                            privateDefaultScopeId: "ipam-scope-private-0123456789"
+                            publicDefaultScopeId: "ipam-scope-public-0123456789"
+                        }
+                    }
+                }
+            ]
             assertResources: [
                 {
                     apiVersion: "ec2.aws.m.upbound.io/v1beta1"
@@ -48,6 +75,7 @@ _items = [
                     spec: {
                         managementPolicies: ["*"]
                         forProvider: {
+                            ipamScopeId: "ipam-scope-private-0123456789"
                             locale: "us-west-2"
                             allocationDefaultNetmaskLength: 16
                             tags: {
@@ -104,29 +132,8 @@ _items = [
                         atProvider: {
                             id: "ipam-1234567890"
                             arn: "arn:aws:ec2:us-east-1:123456789012:ipam/ipam-1234567890"
-                        }
-                    }
-                },
-                {
-                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
-                    kind: "VPCIpamScope"
-                    metadata: {
-                        name: "workloads-ipam-private"
-                        annotations: {
-                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-private-scope"
-                            "crossplane.io/composition-resource-name": "ipam-private-scope"
-                        }
-                    }
-                    status: {
-                        conditions: [
-                            {
-                                type: "Ready"
-                                status: "True"
-                            }
-                        ]
-                        atProvider: {
-                            id: "ipam-scope-1234567890"
-                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam-scope/ipam-scope-1234567890"
+                            privateDefaultScopeId: "ipam-scope-private-1234567890"
+                            publicDefaultScopeId: "ipam-scope-public-1234567890"
                         }
                     }
                 },
@@ -304,78 +311,7 @@ _items = [
                 }
             ]
             assertResources: [
-                {
-                    apiVersion: "protection.crossplane.io/v1beta1"
-                    kind: "Usage"
-                    metadata: {
-                        name: "of-ipam-workloads-ipam-by-scope-workloads-ipam-private"
-                    }
-                    spec: {
-                        replayDeletion: True
-                        by: {
-                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
-                            kind: "VPCIpamScope"
-                            resourceRef: {
-                                name: "workloads-ipam-private"
-                            }
-                        }
-                        of: {
-                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
-                            kind: "VPCIpam"
-                            resourceRef: {
-                                name: "workloads-ipam"
-                            }
-                        }
-                    }
-                },
-                {
-                    apiVersion: "protection.crossplane.io/v1beta1"
-                    kind: "Usage"
-                    metadata: {
-                        name: "of-ipam-scope-workloads-ipam-private-by-pool-workloads-workloads-east"
-                    }
-                    spec: {
-                        replayDeletion: True
-                        by: {
-                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
-                            kind: "VPCIpamPool"
-                            resourceRef: {
-                                name: "workloads-workloads-east"
-                            }
-                        }
-                        of: {
-                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
-                            kind: "VPCIpamScope"
-                            resourceRef: {
-                                name: "workloads-ipam-private"
-                            }
-                        }
-                    }
-                },
-                {
-                    apiVersion: "protection.crossplane.io/v1beta1"
-                    kind: "Usage"
-                    metadata: {
-                        name: "of-ipam-scope-workloads-ipam-private-by-pool-workloads-workloads-west"
-                    }
-                    spec: {
-                        replayDeletion: True
-                        by: {
-                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
-                            kind: "VPCIpamPool"
-                            resourceRef: {
-                                name: "workloads-workloads-west"
-                            }
-                        }
-                        of: {
-                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
-                            kind: "VPCIpamScope"
-                            resourceRef: {
-                                name: "workloads-ipam-private"
-                            }
-                        }
-                    }
-                },
+                # Pool-to-CIDR usages (still valid - no custom scopes involved)
                 {
                     apiVersion: "protection.crossplane.io/v1beta1"
                     kind: "Usage"
@@ -424,6 +360,7 @@ _items = [
                         }
                     }
                 },
+                # Pool-to-RAM share usages
                 {
                     apiVersion: "protection.crossplane.io/v1beta1"
                     kind: "Usage"
@@ -472,6 +409,7 @@ _items = [
                         }
                     }
                 },
+                # RAM share-to-principal usages
                 {
                     apiVersion: "protection.crossplane.io/v1beta1"
                     kind: "Usage"
@@ -531,6 +469,33 @@ _items = [
             xrdPath: "apis/ipams/definition.yaml"
             timeoutSeconds: 120
             validate: True
+            observedResources: [
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpam"
+                    metadata: {
+                        name: "workloads-ipam"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam"
+                            "crossplane.io/composition-resource-name": "ipam"
+                        }
+                    }
+                    status: {
+                        conditions: [
+                            {
+                                type: "Ready"
+                                status: "True"
+                            }
+                        ]
+                        atProvider: {
+                            id: "ipam-1234567890"
+                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam/ipam-1234567890"
+                            privateDefaultScopeId: "ipam-scope-private-1234567890"
+                            publicDefaultScopeId: "ipam-scope-public-1234567890"
+                        }
+                    }
+                }
+            ]
             assertResources: [
                 {
                     apiVersion: "ec2.aws.m.upbound.io/v1beta1"
@@ -555,6 +520,7 @@ _items = [
                     }
                     spec: {
                         forProvider: {
+                            ipamScopeId: "ipam-scope-private-1234567890"
                             allocationDefaultNetmaskLength: 20
                             allocationMinNetmaskLength: 20
                             allocationMaxNetmaskLength: 26
@@ -582,6 +548,7 @@ _items = [
                     }
                     spec: {
                         forProvider: {
+                            ipamScopeId: "ipam-scope-private-1234567890"
                             allocationDefaultNetmaskLength: 20
                             locale: "us-west-2"
                         }
