@@ -116,6 +116,7 @@ _items = [
                                 amazonProvidedIpv6CidrBlock: True
                                 publicIpSource: "amazon"
                                 awsService: "ec2"
+                                netmaskLength: 52  # AWS provisions /52 GUA block (16 x /56 VPC allocations)
                                 managementPolicies: _persist
                                 allocationDefaultNetmaskLength: 56
                                 allocationMinNetmaskLength: 52

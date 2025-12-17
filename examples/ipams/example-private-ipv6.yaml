@@ -37,6 +37,7 @@ spec:
       amazonProvidedIpv6CidrBlock: true
       publicIpSource: amazon
       awsService: ec2
+      netmaskLength: 52  # AWS provisions /52 GUA block (16 x /56 VPC allocations)
       allocationDefaultNetmaskLength: 56
       allocationMinNetmaskLength: 52
       allocationMaxNetmaskLength: 60
