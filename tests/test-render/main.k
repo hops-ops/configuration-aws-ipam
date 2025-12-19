@@ -623,6 +623,7 @@ _items = [
                         atProvider: {
                             id: "ipam-pool-vpc"
                             arn: "arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-vpc"
+                            ipamScopeId: "ipam-scope-private-childtest"
                         }
                     }
                 },
@@ -673,7 +674,7 @@ _items = [
                 }
             ]
             assertResources: [
-                # Child pool should have sourceIpamPoolId (direct ID from observed parent)
+                # Child pool should have sourceIpamPoolId AND ipamScopeId from parent
                 {
                     apiVersion: "ec2.aws.m.upbound.io/v1beta1"
                     kind: "VPCIpamPool"
@@ -683,6 +684,7 @@ _items = [
                     spec: {
                         forProvider: {
                             sourceIpamPoolId: "ipam-pool-vpc"
+                            ipamScopeId: "ipam-scope-private-childtest"
                             allocationDefaultNetmaskLength: 24
                             allocationMinNetmaskLength: 20
                             allocationMaxNetmaskLength: 28

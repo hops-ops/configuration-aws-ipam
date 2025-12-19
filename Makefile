@@ -63,8 +63,9 @@ validate\:all:
 	done
 
 # Shorthand aliases
-render: render\:all
-validate: validate\:all
+.PHONY: render validate
+render: ; @$(MAKE) 'render:all'
+validate: ; @$(MAKE) 'validate:all'
 
 # Single example render (usage: make render:example-minimal)
 render\:%:

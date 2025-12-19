@@ -54,20 +54,25 @@
     {{- $poolObservation := get $observed $poolKey }}
     {{- $poolId := "" }}
     {{- $poolArn := "" }}
+    {{- $poolScopeId := "" }}
     {{- with $poolObservation }}
       {{- $resource := .resource | default (dict) }}
       {{- $status := $resource.status | default (dict) }}
       {{- $atProvider := $status.atProvider | default (dict) }}
       {{- $candidateId := $atProvider.id | default "" }}
       {{- $candidateArn := $atProvider.arn | default "" }}
+      {{- $candidateScopeId := $atProvider.ipamScopeId | default "" }}
       {{- if $candidateId }}
         {{- $poolId = $candidateId }}
       {{- end }}
       {{- if $candidateArn }}
         {{- $poolArn = $candidateArn }}
       {{- end }}
+      {{- if $candidateScopeId }}
+        {{- $poolScopeId = $candidateScopeId }}
+      {{- end }}
     {{- end }}
-    {{- $_ := set $observedPools $poolName (dict "id" $poolId "arn" $poolArn) }}
+    {{- $_ := set $observedPools $poolName (dict "id" $poolId "arn" $poolArn "ipamScopeId" $poolScopeId) }}
   {{- end }}
 {{ end }}
 
