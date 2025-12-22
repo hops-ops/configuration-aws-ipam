@@ -50,7 +50,13 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     with:
       aws: true
+      cleanup-timeout-minutes: 20
       timeout-minutes: 30
+      debug-example-path: examples/ipams/example-minimal.yaml
+      debug-resource-types: |
+        [
+          "ipams.aws.hops.ops.com.ai"
+        ]
 
   version-and-tag:
     name: Version and Tag
