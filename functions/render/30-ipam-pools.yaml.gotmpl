@@ -308,6 +308,9 @@ spec:
     {{- $subnetPoolLabels := dict "hops.ops.com.ai/organization" $organizationName "aws.hops.ops.com.ai/ipam-pool" $subnetPoolName "hops.ops.com.ai/global-pool" $subnetPoolName }}
     {{- $subnetPoolResourceName := printf "%s-%s" $organizationName $subnetPoolName }}
 
+    {{- /* managementPolicies cascade: subnetPool config -> parent pool -> global (defaults to *) */}}
+    {{- $subnetPoolMgmtPolicies := $subnetPoolConfig.managementPolicies | default ($pool.managementPolicies | default $managementPolicies) }}
+
     {{- /* Allocation settings from subnetPool config */}}
     {{- $subnetAllocationDefault := $subnetPoolConfig.allocationDefaultNetmaskLength }}
     {{- $subnetAllocationMin := $subnetPoolConfig.allocationMinNetmaskLength }}
@@ -335,7 +338,7 @@ metadata:
   labels:
     {{- toYaml $subnetPoolLabels | nindent 4 }}
 spec:
-  managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
+  managementPolicies: {{ toYaml $subnetPoolMgmtPolicies | nindent 4 }}
   forProvider:
     addressFamily: ipv4
     description: {{ $subnetPoolDescription }}

@@ -743,6 +743,195 @@ _items = [
                 }
             ]
         }
+    },
+    # Test managementPolicies cascade: subnetPool -> parent -> global
+    metav1alpha1.CompositionTest{
+        metadata.name: "test-ipam-management-policies-cascade"
+        spec = {
+            compositionPath: "apis/ipams/composition.yaml"
+            xrPath: "examples/ipams/example-management-policies.yaml"
+            xrdPath: "apis/ipams/definition.yaml"
+            timeoutSeconds: 120
+            validate: True
+            observedResources: [
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpam"
+                    metadata: {
+                        name: "mgmt-policy-test"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam"
+                            "crossplane.io/composition-resource-name": "ipam"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: {
+                            id: "ipam-mgmt-test"
+                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam/ipam-mgmt-test"
+                            privateDefaultScopeId: "ipam-scope-private-mgmt"
+                            publicDefaultScopeId: "ipam-scope-public-mgmt"
+                        }
+                    }
+                },
+                # Pool A - parent with Observe policy
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: {
+                        name: "mgmt-policy-test-pool-a"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-pool-a"
+                            "crossplane.io/composition-resource-name": "ipam-pool-pool-a"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: {
+                            id: "ipam-pool-a"
+                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-a"
+                            ipamScopeId: "ipam-scope-private-mgmt"
+                        }
+                    }
+                },
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPoolCidr"
+                    metadata: {
+                        name: "mgmt-policy-test-pool-a-cidr"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-cidr-pool-a"
+                            "crossplane.io/composition-resource-name": "ipam-pool-cidr-pool-a"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: { id: "ipam-pool-cidr-a" }
+                    }
+                },
+                # Pool B - parent with Observe policy, subnet pool will override
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: {
+                        name: "mgmt-policy-test-pool-b"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-pool-b"
+                            "crossplane.io/composition-resource-name": "ipam-pool-pool-b"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: {
+                            id: "ipam-pool-b"
+                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-b"
+                            ipamScopeId: "ipam-scope-private-mgmt"
+                        }
+                    }
+                },
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPoolCidr"
+                    metadata: {
+                        name: "mgmt-policy-test-pool-b-cidr"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-cidr-pool-b"
+                            "crossplane.io/composition-resource-name": "ipam-pool-cidr-pool-b"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: { id: "ipam-pool-cidr-b" }
+                    }
+                },
+                # Pool C - no explicit policies (global default)
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: {
+                        name: "mgmt-policy-test-pool-c"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-pool-c"
+                            "crossplane.io/composition-resource-name": "ipam-pool-pool-c"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: {
+                            id: "ipam-pool-c"
+                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-c"
+                            ipamScopeId: "ipam-scope-private-mgmt"
+                        }
+                    }
+                },
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPoolCidr"
+                    metadata: {
+                        name: "mgmt-policy-test-pool-c-cidr"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-cidr-pool-c"
+                            "crossplane.io/composition-resource-name": "ipam-pool-cidr-pool-c"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: { id: "ipam-pool-cidr-c" }
+                    }
+                }
+            ]
+            assertResources: [
+                # Pool A parent - should have ["Observe"]
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "mgmt-policy-test-pool-a" }
+                    spec: { managementPolicies: ["Observe"] }
+                },
+                # Pool A CIDR - should inherit ["Observe"] from pool
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPoolCidr"
+                    metadata: { name: "mgmt-policy-test-pool-a-cidr" }
+                    spec: { managementPolicies: ["Observe"] }
+                },
+                # Pool A subnet pool - should inherit ["Observe"] from parent pool
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "mgmt-policy-test-pool-a-subnets" }
+                    spec: { managementPolicies: ["Observe"] }
+                },
+                # Pool B parent - should have ["Observe"]
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "mgmt-policy-test-pool-b" }
+                    spec: { managementPolicies: ["Observe"] }
+                },
+                # Pool B subnet pool - should override with ["*"]
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "mgmt-policy-test-pool-b-subnets" }
+                    spec: { managementPolicies: ["*"] }
+                },
+                # Pool C parent - should have global default ["*"]
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "mgmt-policy-test-pool-c" }
+                    spec: { managementPolicies: ["*"] }
+                },
+                # Pool C subnet pool - should inherit global default ["*"]
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "mgmt-policy-test-pool-c-subnets" }
+                    spec: { managementPolicies: ["*"] }
+                }
+            ]
+        }
     }
 ]
 items = _items
