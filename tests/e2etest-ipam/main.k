@@ -71,8 +71,8 @@ _ipv6_private_cidr_external_name = "fdc4:f045:5323::/48" + "_" + _ipv6_private_p
 
 # Subnet pools (child pools created via subnetPool.enabled)
 # Update after first run with: aws ec2 describe-ipam-pools --query 'IpamPools[?contains(Description, `subnet`)].IpamPoolId'
-_ipv4_subnet_pool_external_name = ""
-_ipv6_private_subnet_pool_external_name = ""
+_ipv4_subnet_pool_external_name = "ipam-pool-0eac78aa2a229f757"
+_ipv6_private_subnet_pool_external_name = "ipam-pool-0888a212e86abbf13"
 
 _items = [
     metav1alpha1.E2ETest{
