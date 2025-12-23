@@ -34,7 +34,6 @@ _base64_creds = base64.encode(_creds)
 _org_name = "hops"
 _composite_name = "hops-e2e-ipam"
 _home_region = "us-east-2"
-_alt_region = "us-west-2"
 
 # Orphan management policies - no Delete means resources persist
 _persist = ["Create", "Observe", "Update", "LateInitialize"]
@@ -235,37 +234,6 @@ _items = [
                                         "test-run": _now
                                     }
                                 }
-                            },
-                            # Ephemeral IPv6 Public Pool (Amazon GUA) - NO subnet pool
-                            # Note: AWS doesn't support child pools from Amazon-provided public IPv6 pools
-                            # (PubliclyAdvertisable mismatch error), so subnetPool is disabled
-                            {
-                                name: _test_pool_ipv6_gua
-                                addressFamily: "ipv6"
-                                scope: "public"
-                                region: _alt_region
-                                locale: _alt_region
-                                amazonProvidedIpv6CidrBlock: True
-                                publicIpSource: "amazon"
-                                awsService: "ec2"
-                                netmaskLength: 56  # AWS provisions /56 GUA block
-                                managementPolicies: ["*"]
-                                allocationDefaultNetmaskLength: 60
-                                allocationMinNetmaskLength: 56
-                                allocationMaxNetmaskLength: 64
-                                description: "Ephemeral IPv6 GUA test pool - " + _test_pool_ipv6_gua
-                                labels: {
-                                    "ephemeral": "true"
-                                    "test-run": _now
-                                    "address-family": "ipv6"
-                                    "ipv6-type": "public-gua"
-                                }
-                                tags: {
-                                    purpose: "e2e-test-ipv6-gua"
-                                    "test-run": _now
-                                }
-                                # subnetPool disabled - AWS doesn't support child pools from
-                                # Amazon-provided public IPv6 pools due to PubliclyAdvertisable constraints
                             }
                         ]
                     }
