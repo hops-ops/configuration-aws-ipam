@@ -259,7 +259,8 @@ spec:
                       description: |
                         Automatically create a child subnet pool for this VPC pool.
                         Creates a pool named ${poolName}-subnets that allocates from this pool.
-                        Use this with aws-network's cidr.ipv4.ipam.subnetPool feature.
+                        Use this with aws-network's cidr.ipv4.ipam.subnetPool or cidr.ipv6.ipam.subnetPool feature.
+                        Inherits addressFamily from parent pool (supports both IPv4 and IPv6).
                       properties:
                         enabled:
                           type: boolean
@@ -267,21 +268,26 @@ spec:
                           default: false
                         allocationDefaultNetmaskLength:
                           type: integer
-                          minimum: 16
-                          maximum: 28
+                          minimum: 0
+                          maximum: 128
                           description: |
-                            Default netmask length for subnet allocations (e.g., 24 for /24 subnets).
-                            This is the default size allocated to each subnet.
+                            Default netmask length for subnet allocations.
+                            For IPv4: typically 24-28 (e.g., /24 subnets).
+                            For IPv6: typically 56-64 (e.g., /64 subnets).
                         allocationMinNetmaskLength:
                           type: integer
-                          minimum: 16
-                          maximum: 28
-                          description: Minimum netmask length allowed for subnet allocations.
+                          minimum: 0
+                          maximum: 128
+                          description: |
+                            Minimum netmask length allowed for subnet allocations.
+                            For IPv4: typically 16-24. For IPv6: typically 48-56.
                         allocationMaxNetmaskLength:
                           type: integer
-                          minimum: 16
-                          maximum: 28
-                          description: Maximum netmask length allowed for subnet allocations.
+                          minimum: 0
+                          maximum: 128
+                          description: |
+                            Maximum netmask length allowed for subnet allocations.
+                            For IPv4: typically 28. For IPv6: typically 64.
                         description:
                           type: string
                           description: Optional description for the subnet pool.

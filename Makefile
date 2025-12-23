@@ -24,7 +24,11 @@ EXAMPLES := \
 	examples/ipams/example-with-auto-subnet-pool.yaml:: \
 	examples/ipams/example-with-auto-subnet-pool.yaml::examples/observed-resources/example-with-auto-subnet-pool/steps/1 \
 	examples/ipams/example-with-auto-subnet-pool.yaml::examples/observed-resources/example-with-auto-subnet-pool/steps/2 \
-	examples/ipams/example-with-auto-subnet-pool.yaml::examples/observed-resources/example-with-auto-subnet-pool/steps/3
+	examples/ipams/example-with-auto-subnet-pool.yaml::examples/observed-resources/example-with-auto-subnet-pool/steps/3 \
+	examples/ipams/example-with-subnet-pools.yaml:: \
+	examples/ipams/example-with-subnet-pools.yaml::examples/observed-resources/example-with-subnet-pools/steps/1 \
+	examples/ipams/example-with-subnet-pools.yaml::examples/observed-resources/example-with-subnet-pools/steps/2 \
+	examples/ipams/example-with-subnet-pools.yaml::examples/observed-resources/example-with-subnet-pools/steps/3
 
 clean:
 	rm -rf _output

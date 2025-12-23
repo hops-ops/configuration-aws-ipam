@@ -38,8 +38,10 @@ _home_region = "us-east-2"
 # Orphan management policies - no Delete means resources persist
 _persist = ["Create", "Observe", "Update", "LateInitialize"]
 
-# Ephemeral test pool name - deleted after test
+# Ephemeral test pool names - deleted after test
 _test_pool_name = "aws-ipam-" + _now
+_test_pool_ipv6_ula = "ipv6-ula-" + _now
+_test_pool_ipv6_gua = "ipv6-gua-" + _now
 
 # =============================================================================
 # Existing resource IDs (update after first successful run)
@@ -192,6 +194,83 @@ _items = [
                                     description: "Auto-created subnet pool for " + _test_pool_name
                                     tags: {
                                         purpose: "e2e-test-subnet-pool"
+                                        "test-run": _now
+                                    }
+                                }
+                            },
+                            # Ephemeral IPv6 Private Pool (ULA) with subnet pool
+                            # Tests that subnetPool inherits addressFamily: ipv6 from parent
+                            {
+                                name: _test_pool_ipv6_ula
+                                addressFamily: "ipv6"
+                                scope: "private"
+                                region: _home_region
+                                locale: _home_region
+                                netmaskLength: 56  # AWS auto-assigns ULA CIDR
+                                managementPolicies: ["*"]
+                                allocationDefaultNetmaskLength: 60
+                                allocationMinNetmaskLength: 56
+                                allocationMaxNetmaskLength: 64
+                                description: "Ephemeral IPv6 ULA test pool - " + _test_pool_ipv6_ula
+                                labels: {
+                                    "ephemeral": "true"
+                                    "test-run": _now
+                                    "address-family": "ipv6"
+                                    "ipv6-type": "private-ula"
+                                }
+                                tags: {
+                                    purpose: "e2e-test-ipv6-ula"
+                                    "test-run": _now
+                                }
+                                # Auto-create subnet pool - should inherit ipv6 addressFamily
+                                subnetPool: {
+                                    enabled: True
+                                    allocationDefaultNetmaskLength: 64
+                                    allocationMinNetmaskLength: 60
+                                    allocationMaxNetmaskLength: 64
+                                    description: "Auto-created IPv6 ULA subnet pool for " + _test_pool_ipv6_ula
+                                    tags: {
+                                        purpose: "e2e-test-ipv6-ula-subnet-pool"
+                                        "test-run": _now
+                                    }
+                                }
+                            },
+                            # Ephemeral IPv6 Public Pool (Amazon GUA) with subnet pool
+                            # Tests subnetPool with public IPv6 (Amazon-provided)
+                            {
+                                name: _test_pool_ipv6_gua
+                                addressFamily: "ipv6"
+                                scope: "public"
+                                region: _home_region
+                                locale: _home_region
+                                amazonProvidedIpv6CidrBlock: True
+                                publicIpSource: "amazon"
+                                awsService: "ec2"
+                                netmaskLength: 56  # AWS provisions /56 GUA block
+                                managementPolicies: ["*"]
+                                allocationDefaultNetmaskLength: 60
+                                allocationMinNetmaskLength: 56
+                                allocationMaxNetmaskLength: 64
+                                description: "Ephemeral IPv6 GUA test pool - " + _test_pool_ipv6_gua
+                                labels: {
+                                    "ephemeral": "true"
+                                    "test-run": _now
+                                    "address-family": "ipv6"
+                                    "ipv6-type": "public-gua"
+                                }
+                                tags: {
+                                    purpose: "e2e-test-ipv6-gua"
+                                    "test-run": _now
+                                }
+                                # Auto-create subnet pool - should inherit ipv6 addressFamily
+                                subnetPool: {
+                                    enabled: True
+                                    allocationDefaultNetmaskLength: 64
+                                    allocationMinNetmaskLength: 60
+                                    allocationMaxNetmaskLength: 64
+                                    description: "Auto-created IPv6 GUA subnet pool for " + _test_pool_ipv6_gua
+                                    tags: {
+                                        purpose: "e2e-test-ipv6-gua-subnet-pool"
                                         "test-run": _now
                                     }
                                 }
