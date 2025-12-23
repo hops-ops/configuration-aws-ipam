@@ -305,8 +305,11 @@ spec:
     {{- $poolLocale := $pool.locale | default $poolRegion }}
     {{- $subnetPoolDescription := $subnetPoolConfig.description | default (printf "Subnet pool for %s (auto-created)" $poolName) }}
     {{- $subnetPoolTags := merge $defaultAWSTags ($subnetPoolConfig.tags | default (dict)) }}
-    {{- $subnetPoolLabels := dict "hops.ops.com.ai/organization" $organizationName "aws.hops.ops.com.ai/ipam-pool" $subnetPoolName "hops.ops.com.ai/global-pool" $subnetPoolName }}
+    {{- $subnetPoolLabels := dict "hops.ops.com.ai/organization" $organizationName "aws.hops.ops.com.ai/ipam-pool" $subnetPoolName "hops.ops.com.ai/parent-pool" $poolName "hops.ops.com.ai/auto-subnet-pool" "true" }}
     {{- $subnetPoolResourceName := printf "%s-%s" $organizationName $subnetPoolName }}
+
+    {{- /* Inherit address family from parent pool */}}
+    {{- $subnetPoolAddressFamily := $pool.addressFamily | default "ipv4" }}
 
     {{- /* managementPolicies cascade: subnetPool config -> parent pool -> global (defaults to *) */}}
     {{- $subnetPoolMgmtPolicies := $subnetPoolConfig.managementPolicies | default ($pool.managementPolicies | default $managementPolicies) }}
@@ -340,7 +343,7 @@ metadata:
 spec:
   managementPolicies: {{ toYaml $subnetPoolMgmtPolicies | nindent 4 }}
   forProvider:
-    addressFamily: ipv4
+    addressFamily: {{ $subnetPoolAddressFamily }}
     description: {{ $subnetPoolDescription }}
     sourceIpamPoolId: {{ $parentPoolId }}
     ipamScopeId: {{ $parentPoolScopeId }}
