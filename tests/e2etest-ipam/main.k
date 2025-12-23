@@ -235,8 +235,9 @@ _items = [
                                     }
                                 }
                             },
-                            # Ephemeral IPv6 Public Pool (Amazon GUA) with subnet pool
-                            # Tests subnetPool with public IPv6 (Amazon-provided)
+                            # Ephemeral IPv6 Public Pool (Amazon GUA) - NO subnet pool
+                            # Note: AWS doesn't support child pools from Amazon-provided public IPv6 pools
+                            # (PubliclyAdvertisable mismatch error), so subnetPool is disabled
                             {
                                 name: _test_pool_ipv6_gua
                                 addressFamily: "ipv6"
@@ -262,18 +263,8 @@ _items = [
                                     purpose: "e2e-test-ipv6-gua"
                                     "test-run": _now
                                 }
-                                # Auto-create subnet pool - should inherit ipv6 addressFamily
-                                subnetPool: {
-                                    enabled: True
-                                    allocationDefaultNetmaskLength: 64
-                                    allocationMinNetmaskLength: 60
-                                    allocationMaxNetmaskLength: 64
-                                    description: "Auto-created IPv6 GUA subnet pool for " + _test_pool_ipv6_gua
-                                    tags: {
-                                        purpose: "e2e-test-ipv6-gua-subnet-pool"
-                                        "test-run": _now
-                                    }
-                                }
+                                # subnetPool disabled - AWS doesn't support child pools from
+                                # Amazon-provided public IPv6 pools due to PubliclyAdvertisable constraints
                             }
                         ]
                     }

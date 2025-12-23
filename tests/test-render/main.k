@@ -940,6 +940,7 @@ _items = [
                     }
                 },
                 # IPv6 GUA parent pool should have addressFamily: ipv6
+                # Note: No subnet pool for GUA - AWS doesn't support child pools from Amazon-provided public IPv6 pools
                 {
                     apiVersion: "ec2.aws.m.upbound.io/v1beta1"
                     kind: "VPCIpamPool"
@@ -950,23 +951,6 @@ _items = [
                             allocationDefaultNetmaskLength: 56
                             publicIpSource: "amazon"
                             awsService: "ec2"
-                        }
-                    }
-                },
-                # IPv6 GUA subnet pool should inherit addressFamily: ipv6
-                {
-                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
-                    kind: "VPCIpamPool"
-                    metadata: { name: "dual-stack-ipv6-gua-subnets" }
-                    spec: {
-                        forProvider: {
-                            addressFamily: "ipv6"
-                            sourceIpamPoolId: "ipam-pool-ipv6-gua"
-                            ipamScopeId: "ipam-scope-public-dualstack"
-                            allocationDefaultNetmaskLength: 64
-                            allocationMinNetmaskLength: 60
-                            allocationMaxNetmaskLength: 64
-                            description: "IPv6 GUA subnet pool"
                         }
                     }
                 }

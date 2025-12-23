@@ -4,12 +4,15 @@
 # Creates:
 # - IPv4 VPC pool (10.0.0.0/8) with auto-generated subnet pool
 # - IPv6 private ULA pool (netmaskLength: 56) with auto-generated subnet pool
-# - IPv6 public GUA pool (Amazon-provided) with auto-generated subnet pool
+# - IPv6 public GUA pool (Amazon-provided) - NO subnet pool (see note below)
 #
 # The subnet pools should inherit addressFamily from their parent:
 # - ipv4-vpc-subnets: addressFamily: ipv4
 # - ipv6-ula-subnets: addressFamily: ipv6
-# - ipv6-gua-subnets: addressFamily: ipv6
+#
+# Note: AWS doesn't support child pools from Amazon-provided public IPv6 pools
+# due to PubliclyAdvertisable constraints. GUA addresses are allocated directly
+# from the pool to VPCs without intermediate subnet pools.
 apiVersion: aws.hops.ops.com.ai/v1alpha1
 kind: IPAM
 metadata:
@@ -54,8 +57,8 @@ spec:
         allocationMaxNetmaskLength: 64
         description: "IPv6 ULA subnet pool"
 
-    # IPv6 public GUA pool (Amazon-provided) with automatic subnet pool
-    # The subnet pool should inherit addressFamily: ipv6
+    # IPv6 public GUA pool (Amazon-provided) - NO subnet pool
+    # AWS doesn't support child pools from Amazon-provided public IPv6 pools
     - name: ipv6-gua
       addressFamily: ipv6
       scope: public
@@ -69,9 +72,3 @@ spec:
       labels:
         address-family: ipv6
         ipv6-type: gua
-      subnetPool:
-        enabled: true
-        allocationDefaultNetmaskLength: 64
-        allocationMinNetmaskLength: 60
-        allocationMaxNetmaskLength: 64
-        description: "IPv6 GUA subnet pool"
