@@ -1,21 +1,24 @@
 # e2etest-ipam - Persistent IPAM for dual-stack VPC provisioning
 # ==============================================================
 # Creates IPAM with IPv4 + IPv6 pools for VPC/subnet allocation.
-# Resources are orphaned via managementPolicies (no Delete) for reuse.
+# Global pools are persistent (orphaned via managementPolicies without Delete).
+# Subnet pools have full management for cleanup of previously orphaned resources.
 #
 # After first run, update externalName fields with actual IDs to import.
 # These same resources are used by aws-foundation and aws-network e2e tests.
 #
-# Pools created (persistent):
+# Global pools (persistent - no Delete):
 # - ipv4: 10.0.0.0/8 for VPC IPv4 CIDRs
-#   - ipv4-subnets: child pool for subnet allocations (auto-created)
-# - ipv6-public: Amazon-provided GUA for internet-routable workloads (no subnet pool - AWS limitation)
+# - ipv6-public: Amazon-provided GUA for internet-routable workloads
 # - ipv6-private: ULA /48 for private IPv6 workloads
-#   - ipv6-private-subnets: child pool for IPv6 subnet allocations (auto-created)
 #
-# Pools created (ephemeral - deleted after test):
+# Subnet pools (ephemeral - created/deleted each run):
+# - ipv4-subnets: child pool for subnet allocations
+# - ipv6-private-subnets: child pool for IPv6 subnet allocations
+#
+# Ephemeral test pools (deleted after test):
 # - aws-ipam-<timestamp>: test pool with automatic subnet pool
-# - aws-ipam-<timestamp>-subnets: auto-created child pool via subnetPool.enabled
+# - aws-ipam-<timestamp>-subnets: auto-created child pool
 # - ipv6-ula-<timestamp>: IPv6 ULA test pool with automatic subnet pool
 # - ipv6-ula-<timestamp>-subnets: auto-created IPv6 child pool
 
@@ -119,10 +122,10 @@ _items = [
                                 tags: {
                                     purpose: "vpc-ipv4"
                                 }
-                                # Persistent subnet pool for network allocations
+                                # Test Subnet pool for network allocations - cleaned up after test
                                 subnetPool: {
                                     enabled: True
-                                    managementPolicies: _persist
+                                    managementPolicies: ["*"]
                                     if _ipv4_subnet_pool_external_name:
                                         externalName: _ipv4_subnet_pool_external_name
                                     allocationDefaultNetmaskLength: 24
@@ -170,7 +173,7 @@ _items = [
                                 region: _home_region
                                 locale: _home_region
                                 netmaskLength: 48  # AWS auto-assigns ULA CIDR
-                                managementPolicies: _persist
+                                managementPolicies: ["*"]
                                 allocationDefaultNetmaskLength: 56
                                 allocationMinNetmaskLength: 48
                                 allocationMaxNetmaskLength: 64
@@ -187,10 +190,10 @@ _items = [
                                 tags: {
                                     purpose: "vpc-ipv6-private"
                                 }
-                                # Persistent subnet pool for network allocations (inherits ipv6)
+                                # Subnet pool for network allocations (inherits ipv6) - full management to clean up orphaned pools
                                 subnetPool: {
                                     enabled: True
-                                    managementPolicies: _persist
+                                    managementPolicies: ["*"]
                                     if _ipv6_private_subnet_pool_external_name:
                                         externalName: _ipv6_private_subnet_pool_external_name
                                     allocationDefaultNetmaskLength: 64
@@ -309,7 +312,7 @@ _items = [
                     }
                 }
             ]
-            skipDelete: True
+            skipDelete: False
             timeoutSeconds: 4500
         }
     }
