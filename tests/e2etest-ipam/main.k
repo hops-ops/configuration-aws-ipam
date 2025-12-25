@@ -114,7 +114,8 @@ _items = [
                                     "hops.ops.com.ai/global-pool": "ipv4"
                                 }
                                 tags: {
-                                    purpose: "global-ipv4"
+                                    "hops.ops.com.ai/e2e": "true",
+                                    "hops.ops.com.ai/e2e-persistent": "true"
                                 }
                             },
 
@@ -143,11 +144,10 @@ _items = [
                                     "address-family": "ipv4"
                                     "pool-type": "regional"
                                     "region": "us-east-2"
-                                    "hops.ops.com.ai/regional-pool": "ipv4-us-east-2"
                                 }
                                 tags: {
-                                    purpose: "regional-ipv4"
-                                    region: "us-east-2"
+                                    "hops.ops.com.ai/e2e": "true",
+                                    "hops.ops.com.ai/e2e-persistent": "true"
                                 }
                             },
 
@@ -181,7 +181,8 @@ _items = [
                                     "ipv6-type": "public"
                                 }
                                 tags: {
-                                    purpose: "global-ipv6-public"
+                                    "hops.ops.com.ai/e2e": "true",
+                                    "hops.ops.com.ai/e2e-persistent": "true"
                                 }
                             },
 
@@ -213,7 +214,8 @@ _items = [
                                     "hops.ops.com.ai/global-pool": "ipv6-private"
                                 }
                                 tags: {
-                                    purpose: "global-ipv6-private"
+                                    "hops.ops.com.ai/e2e": "true",
+                                    "hops.ops.com.ai/e2e-persistent": "true"
                                 }
                             },
 
@@ -236,8 +238,9 @@ _items = [
                                     "test-run": _now
                                 }
                                 tags: {
-                                    purpose: "e2e-test"
-                                    "test-run": _now
+                                    "hops.ops.com.ai/e2e": "true",
+                                    "hops.ops.com.ai/e2e-persistent": "false",
+                                    "hops.ops.com.ai/e2e-last-run": _now
                                 }
                             },
                             {
@@ -258,8 +261,9 @@ _items = [
                                     "address-family": "ipv6"
                                 }
                                 tags: {
-                                    purpose: "e2e-test-ipv6-ula"
-                                    "test-run": _now
+                                    "hops.ops.com.ai/e2e": "true",
+                                    "hops.ops.com.ai/e2e-persistent": "false",
+                                    "hops.ops.com.ai/e2e-last-run": _now
                                 }
                             }
                         ]
