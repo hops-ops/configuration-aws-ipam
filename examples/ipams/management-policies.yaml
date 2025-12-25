@@ -8,16 +8,17 @@ metadata:
 spec:
   region: us-east-1
   pools:
-    # Pool A: Explicit Observe policy
-    - name: pool-a
-      cidr: "10.0.0.0/16"
-      managementPolicies: ["Observe"]
+    ipv4:
+      # Pool A: Explicit Observe policy
+      - name: pool-a
+        cidr: "10.0.0.0/16"
+        managementPolicies: ["Observe"]
 
-    # Pool B: Explicit full management
-    - name: pool-b
-      cidr: "10.1.0.0/16"
-      managementPolicies: ["*"]
+      # Pool B: Explicit full management
+      - name: pool-b
+        cidr: "10.1.0.0/16"
+        managementPolicies: ["*"]
 
-    # Pool C: No explicit policies - gets global default ["*"]
-    - name: pool-c
-      cidr: "10.2.0.0/16"
+      # Pool C: No explicit policies - gets global default ["*"]
+      - name: pool-c
+        cidr: "10.2.0.0/16"

@@ -38,8 +38,11 @@
 # ==============================================================================
 # Pools
 # ==============================================================================
-{{ $ipamPools := $spec.pools | default (list) }}
-{{ $ipamHasPools := gt (len $ipamPools) 0 }}
+{{ $pools := $spec.pools | default (dict) }}
+{{ $ipv4Pools := $pools.ipv4 | default (list) }}
+{{ $ipv6 := $pools.ipv6 | default (dict) }}
+{{ $ipv6ULAPools := $ipv6.ula | default (list) }}
+{{ $ipv6GUAPools := $ipv6.gua | default (list) }}
 
 # ==============================================================================
 # Custom Scopes
@@ -71,7 +74,13 @@
 {{ range $operatingRegions }}
   {{- $_ = set $ipamRegionSet . true }}
 {{ end }}
-{{ range $ipamPools }}
+{{ range $ipv4Pools }}
+  {{- $_ = set $ipamRegionSet (.region | default .locale | default $region) true }}
+{{ end }}
+{{ range $ipv6ULAPools }}
+  {{- $_ = set $ipamRegionSet (.region | default .locale | default $region) true }}
+{{ end }}
+{{ range $ipv6GUAPools }}
   {{- $_ = set $ipamRegionSet (.region | default .locale | default $region) true }}
 {{ end }}
 {{ $ipamRegionList := sortAlpha (keys $ipamRegionSet) }}

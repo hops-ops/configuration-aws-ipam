@@ -9,15 +9,7 @@
 # Set amazonProvidedIpv6CidrBlock: true to request AWS-assigned public IPv6 space.
 #
 
-{{- range $pool := $ipamPools }}
-
-  {{- $addressFamily := $pool.addressFamily | default "ipv4" }}
-  {{- $amazonProvided := $pool.amazonProvidedIpv6CidrBlock | default false }}
-
-  # Skip non-GUA pools (must be ipv6 AND amazon-provided)
-  {{- if not (and (eq $addressFamily "ipv6") $amazonProvided) }}
-    {{- continue }}
-  {{- end }}
+{{- range $pool := $ipv6GUAPools }}
 
   # ============================================================================
   # IPv6 GUA Pool: {{ $pool.name }}
@@ -26,17 +18,17 @@
   {{- $poolName := $pool.name }}
 
   # --- Pool Configuration ---
-  {{- $poolScope := $pool.scope | default "public" }}
+  # GUA pools are always public scope with Amazon-provided CIDR
   {{- $sourcePoolRef := $pool.sourcePoolRef | default "" }}
   {{- $publicIpSource := $pool.publicIpSource | default "amazon" }}
   {{- $awsService := $pool.awsService | default "ec2" }}
   {{- $poolExternalName := $pool.externalName | default "" }}
   {{- $poolMgmtPolicies := $pool.managementPolicies | default $managementPolicies }}
   {{- $poolForProvider := $pool.forProvider | default (dict) }}
+  {{- $poolNetmaskLength := $pool.netmaskLength }}
 
   # --- Pool Type Flags ---
   {{- $isChildPool := ne $sourcePoolRef "" }}
-  {{- $isPublicPool := eq $poolScope "public" }}
 
   # --- Parent Pool Data (for child pools only) ---
   {{- $parentPoolId := "" }}
@@ -54,21 +46,16 @@
   # ===========================================================================
   # Rendering Gate
   # ===========================================================================
-  # GUA pools typically use public scope for internet-routable addresses
+  # GUA pools always use public scope for internet-routable addresses
   {{- $canRenderPool := true }}
 
   {{- if $isChildPool }}
     {{- if not (and $parentPoolReady $parentPoolId $parentPoolScopeId) }}
       {{- $canRenderPool = false }}
     {{- end }}
-  {{- else if $isPublicPool }}
+  {{- else }}
     # Public scope: needs IPAM's defaultPublicScopeId
     {{- if not $observedDefaultPublicScopeId }}
-      {{- $canRenderPool = false }}
-    {{- end }}
-  {{- else }}
-    # Private scope (unusual for GUA but allowed): needs IPAM's defaultPrivateScopeId
-    {{- if not $observedDefaultPrivateScopeId }}
       {{- $canRenderPool = false }}
     {{- end }}
   {{- end }}
@@ -119,11 +106,9 @@ spec:
     {{- if $isChildPool }}
     sourceIpamPoolId: {{ $parentPoolId }}
     ipamScopeId: {{ $parentPoolScopeId }}
-    {{- else if $isPublicPool }}
+    {{- else }}
     # Public scope for GUA (internet-routable)
     ipamScopeId: {{ $observedDefaultPublicScopeId }}
-    {{- else }}
-    ipamScopeId: {{ $observedDefaultPrivateScopeId }}
     {{- end }}
     locale: {{ $poolLocale }}
     region: {{ $poolRegion }}
@@ -212,7 +197,7 @@ spec:
     # -------------------------------------------------------------------------
     # VPCIpamPoolCidr: {{ $poolCidrResourceName }}
     # -------------------------------------------------------------------------
-    # For GUA pools, AWS provisions the CIDR automatically (no cidr/netmaskLength needed)
+    # GUA pools use netmaskLength to specify the size of Amazon-provided range
     {{- $poolCidrExternalName := $pool.cidrExternalName | default "" }}
     {{- if not $isChildPool }}
 
@@ -231,7 +216,9 @@ metadata:
 spec:
   managementPolicies: {{ toYaml $poolMgmtPolicies | nindent 4 }}
   forProvider:
-    # For amazonProvidedIpv6CidrBlock, no cidr/netmaskLength - AWS provisions automatically
+    {{- if $poolNetmaskLength }}
+    netmaskLength: {{ $poolNetmaskLength }}
+    {{- end }}
     ipamPoolIdRef:
       name: {{ $poolResourceName }}
     region: {{ $poolRegion }}

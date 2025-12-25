@@ -11,11 +11,13 @@
 # These resources are used by aws-foundation and aws-network e2e tests.
 #
 # Pool hierarchy:
-#   ipv4 (10.0.0.0/8) - global
-#     └── ipv4-us-east-2 (10.0.0.0/12) - regional, allocates /16 VPCs
-#   ipv6-private (/32 ULA) - global
-#     └── (regional pools TBD)
-#   ipv6-public (/52 GUA) - global, Amazon-provided
+#   pools.ipv4:
+#     ipv4 (10.0.0.0/8) - global
+#       └── ipv4-us-east-2 (10.0.0.0/12) - regional, allocates /16 VPCs
+#   pools.ipv6.ula:
+#     ipv6-private (/48 ULA) - global
+#   pools.ipv6.gua:
+#     ipv6-public (/52 GUA) - global, Amazon-provided
 
 import base64
 import datetime
@@ -66,10 +68,10 @@ _ipv4_regional_useast2_cidr_external_name = ""  # Update after first run
 _ipv6_public_pool_external_name = "ipam-pool-06b3ec78deea8bcb9"
 _ipv6_public_cidr_external_name = "2600:1f26:47:c000::/52" + "_" + _ipv6_public_pool_external_name
 
-# IPv6 private pool (ULA /32) - will be new pool
-# Note: /32 is the largest ULA block AWS allows
+# IPv6 private pool (ULA /48) - will be new pool
+# Note: /48 is a reasonable ULA block size
 _ipv6_private_pool_external_name = ""  # Update after first run
-_ipv6_private_cidr_external_name = ""  # Will be auto-assigned ULA /32
+_ipv6_private_cidr_external_name = ""  # Will be auto-assigned ULA /48
 
 _items = [
     metav1alpha1.E2ETest{
@@ -89,183 +91,171 @@ _items = [
                         operatingRegions: [_home_region]
                         if _ipam_external_name:
                             externalName: _ipam_external_name
-                        pools: [
+                        pools: {
                             # ==========================================================
-                            # GLOBAL IPv4 POOL - Top of hierarchy
+                            # IPv4 POOLS
                             # ==========================================================
-                            {
-                                name: "ipv4"
-                                addressFamily: "ipv4"
-                                region: _home_region
-                                cidr: "10.0.0.0/8"
-                                managementPolicies: _persist
-                                # Allocations from this pool are /12 regional pools
-                                allocationDefaultNetmaskLength: 12
-                                allocationMinNetmaskLength: 10
-                                allocationMaxNetmaskLength: 16
-                                description: "Global IPv4 pool"
-                                if _ipv4_global_pool_external_name:
-                                    externalName: _ipv4_global_pool_external_name
-                                if _ipv4_global_cidr_external_name:
-                                    cidrExternalName: _ipv4_global_cidr_external_name
-                                labels: {
-                                    "address-family": "ipv4"
-                                    "pool-type": "global"
-                                    "hops.ops.com.ai/global-pool": "ipv4"
+                            ipv4: [
+                                # Global IPv4 pool - top of hierarchy
+                                {
+                                    name: "ipv4"
+                                    region: _home_region
+                                    cidr: "10.0.0.0/8"
+                                    managementPolicies: _persist
+                                    # Allocations from this pool are /12 regional pools
+                                    allocationDefaultNetmaskLength: 12
+                                    allocationMinNetmaskLength: 12
+                                    allocationMaxNetmaskLength: 12
+                                    description: "Global IPv4 pool"
+                                    if _ipv4_global_pool_external_name:
+                                        externalName: _ipv4_global_pool_external_name
+                                    if _ipv4_global_cidr_external_name:
+                                        cidrExternalName: _ipv4_global_cidr_external_name
+                                    labels: {
+                                        "pool-type": "global"
+                                        "hops.ops.com.ai/global-pool": "ipv4"
+                                    }
+                                    tags: {
+                                        "hops.ops.com.ai/e2e": "true",
+                                        "hops.ops.com.ai/e2e-persistent": "true"
+                                    }
+                                },
+
+                                # Regional IPv4 pool - us-east-2
+                                # Child of global ipv4 pool. NetworkAllocation uses this.
+                                {
+                                    name: "ipv4-us-east-2"
+                                    sourcePoolRef: "ipv4"  # Child of global pool
+                                    region: _home_region
+                                    locale: _home_region
+                                    cidr: "10.0.0.0/12"  # 10.0.0.0 - 10.15.255.255
+                                    managementPolicies: _persist
+                                    # Allocations from this pool are /16-/20 VPCs
+                                    allocationDefaultNetmaskLength: 16
+                                    allocationMinNetmaskLength: 16
+                                    allocationMaxNetmaskLength: 16
+                                    description: "Regional IPv4 pool for us-east-2"
+                                    if _ipv4_regional_useast2_external_name:
+                                        externalName: _ipv4_regional_useast2_external_name
+                                    if _ipv4_regional_useast2_cidr_external_name:
+                                        cidrExternalName: _ipv4_regional_useast2_cidr_external_name
+                                    labels: {
+                                        "pool-type": "regional"
+                                        "region": "us-east-2"
+                                    }
+                                    tags: {
+                                        "hops.ops.com.ai/e2e": "true",
+                                        "hops.ops.com.ai/e2e-persistent": "true"
+                                    }
+                                },
+
+                                # Ephemeral test pool - deleted after test
+                                {
+                                    name: _test_pool_name
+                                    region: _home_region
+                                    cidr: "172.31.0.0/16"
+                                    managementPolicies: ["*"]  # Full management - gets deleted
+                                    allocationDefaultNetmaskLength: 24
+                                    allocationMinNetmaskLength: 20
+                                    allocationMaxNetmaskLength: 28
+                                    description: "Ephemeral test pool - " + _test_pool_name
+                                    labels: {
+                                        "ephemeral": "true"
+                                        "test-run": _now
+                                    }
+                                    tags: {
+                                        "hops.ops.com.ai/e2e": "true",
+                                        "hops.ops.com.ai/e2e-persistent": "false",
+                                        "hops.ops.com.ai/e2e-last-run": _now
+                                    }
                                 }
-                                tags: {
-                                    "hops.ops.com.ai/e2e": "true",
-                                    "hops.ops.com.ai/e2e-persistent": "true"
-                                }
-                            },
+                            ],
 
                             # ==========================================================
-                            # REGIONAL IPv4 POOL - us-east-2
-                            # Child of global ipv4 pool. NetworkAllocation uses this.
+                            # IPv6 POOLS
                             # ==========================================================
-                            {
-                                name: "ipv4-us-east-2"
-                                addressFamily: "ipv4"
-                                sourcePoolRef: "ipv4"  # Child of global pool
-                                region: _home_region
-                                locale: _home_region
-                                cidr: "10.0.0.0/12"  # 10.0.0.0 - 10.15.255.255
-                                managementPolicies: _persist
-                                # Allocations from this pool are /16-/20 VPCs
-                                allocationDefaultNetmaskLength: 16
-                                allocationMinNetmaskLength: 16
-                                allocationMaxNetmaskLength: 20
-                                description: "Regional IPv4 pool for us-east-2"
-                                if _ipv4_regional_useast2_external_name:
-                                    externalName: _ipv4_regional_useast2_external_name
-                                if _ipv4_regional_useast2_cidr_external_name:
-                                    cidrExternalName: _ipv4_regional_useast2_cidr_external_name
-                                labels: {
-                                    "address-family": "ipv4"
-                                    "pool-type": "regional"
-                                    "region": "us-east-2"
-                                }
-                                tags: {
-                                    "hops.ops.com.ai/e2e": "true",
-                                    "hops.ops.com.ai/e2e-persistent": "true"
-                                }
-                            },
+                            ipv6: {
+                                # ULA pools (private, fd00::/8)
+                                ula: [
+                                    # Global IPv6 private pool - ULA /48
+                                    {
+                                        name: "ipv6-private"
+                                        region: _home_region
+                                        locale: _home_region
+                                        netmaskLength: 48
+                                        managementPolicies: _persist
+                                        # Allocations are /56 VPCs
+                                        allocationDefaultNetmaskLength: 56
+                                        allocationMinNetmaskLength: 56
+                                        allocationMaxNetmaskLength: 56
+                                        description: "Global IPv6 private pool (ULA /48)"
+                                        if _ipv6_private_pool_external_name:
+                                            externalName: _ipv6_private_pool_external_name
+                                        if _ipv6_private_cidr_external_name:
+                                            cidrExternalName: _ipv6_private_cidr_external_name
+                                        labels: {
+                                            "pool-type": "global"
+                                            "hops.ops.com.ai/global-pool": "ipv6-private"
+                                        }
+                                        tags: {
+                                            "hops.ops.com.ai/e2e": "true",
+                                            "hops.ops.com.ai/e2e-persistent": "true"
+                                        }
+                                    },
 
-                            # ==========================================================
-                            # GLOBAL IPv6 PUBLIC POOL - Amazon GUA
-                            # For internet-routable workloads
-                            # ==========================================================
-                            {
-                                name: "ipv6-public"
-                                addressFamily: "ipv6"
-                                scope: "public"
-                                region: _home_region
-                                locale: _home_region
-                                amazonProvidedIpv6CidrBlock: True
-                                publicIpSource: "amazon"
-                                awsService: "ec2"
-                                netmaskLength: 52  # AWS provisions /52 GUA block
-                                managementPolicies: _persist
-                                # Allocations are /56 per VPC
-                                allocationDefaultNetmaskLength: 56
-                                allocationMinNetmaskLength: 52
-                                allocationMaxNetmaskLength: 60
-                                description: "Global IPv6 public pool (Amazon GUA)"
-                                if _ipv6_public_pool_external_name:
-                                    externalName: _ipv6_public_pool_external_name
-                                if _ipv6_public_cidr_external_name:
-                                    cidrExternalName: _ipv6_public_cidr_external_name
-                                labels: {
-                                    "address-family": "ipv6"
-                                    "pool-type": "global"
-                                    "ipv6-type": "public"
-                                }
-                                tags: {
-                                    "hops.ops.com.ai/e2e": "true",
-                                    "hops.ops.com.ai/e2e-persistent": "true"
-                                }
-                            },
+                                    # Ephemeral IPv6 ULA test pool - deleted after test
+                                    {
+                                        name: _test_pool_ipv6_ula
+                                        sourcePoolRef: "ipv6-private"
+                                        region: _home_region
+                                        locale: _home_region
+                                        netmaskLength: 56  # Allocated from parent's /48
+                                        managementPolicies: ["*"]  # Full management - gets deleted
+                                        allocationDefaultNetmaskLength: 60
+                                        allocationMinNetmaskLength: 56
+                                        allocationMaxNetmaskLength: 64
+                                        description: "Ephemeral IPv6 ULA test pool - " + _test_pool_ipv6_ula
+                                        labels: {
+                                            "ephemeral": "true"
+                                            "test-run": _now
+                                        }
+                                        tags: {
+                                            "hops.ops.com.ai/e2e": "true",
+                                            "hops.ops.com.ai/e2e-persistent": "false",
+                                            "hops.ops.com.ai/e2e-last-run": _now
+                                        }
+                                    }
+                                ],
 
-                            # ==========================================================
-                            # GLOBAL IPv6 PRIVATE POOL - ULA /48
-                            # ==========================================================
-                            {
-                                name: "ipv6-private"
-                                addressFamily: "ipv6"
-                                scope: "private"
-                                region: _home_region
-                                locale: _home_region
-                                netmaskLength: 48  # Largest ULA block AWS allows
-                                managementPolicies: _persist
-                                # Allocations are /48 regional pools or /56 VPCs
-                                allocationDefaultNetmaskLength: 56
-                                allocationMinNetmaskLength: 56
-                                allocationMaxNetmaskLength: 56
-                                description: "Global IPv6 private pool (ULA /32)"
-                                if _ipv6_private_pool_external_name:
-                                    externalName: _ipv6_private_pool_external_name
-                                if _ipv6_private_cidr_external_name:
-                                    cidrExternalName: _ipv6_private_cidr_external_name
-                                labels: {
-                                    "address-family": "ipv6"
-                                    "pool-type": "global"
-                                    "ipv6-type": "private"
-                                    "hops.ops.com.ai/global-pool": "ipv6-private"
-                                }
-                                tags: {
-                                    "hops.ops.com.ai/e2e": "true",
-                                    "hops.ops.com.ai/e2e-persistent": "true"
-                                }
-                            },
-
-                            # ==========================================================
-                            # EPHEMERAL TEST POOLS - deleted after test
-                            # Tests that pool creation/deletion works correctly
-                            # ==========================================================
-                            {
-                                name: _test_pool_name
-                                addressFamily: "ipv4"
-                                region: _home_region
-                                cidr: "172.31.0.0/16"
-                                managementPolicies: ["*"]  # Full management - gets deleted
-                                allocationDefaultNetmaskLength: 24
-                                allocationMinNetmaskLength: 20
-                                allocationMaxNetmaskLength: 28
-                                description: "Ephemeral test pool - " + _test_pool_name
-                                labels: {
-                                    "ephemeral": "true"
-                                    "test-run": _now
-                                }
-                                tags: {
-                                    "hops.ops.com.ai/e2e": "true",
-                                    "hops.ops.com.ai/e2e-persistent": "false",
-                                    "hops.ops.com.ai/e2e-last-run": _now
-                                }
-                            },
-                            {
-                                name: _test_pool_ipv6_ula
-                                addressFamily: "ipv6"
-                                sourcePoolRef: "ipv6-private"
-                                region: _home_region
-                                locale: _home_region
-                                netmaskLength: 56  # Allocated from parent's /48
-                                managementPolicies: ["*"]  # Full management - gets deleted
-                                allocationDefaultNetmaskLength: 60
-                                allocationMinNetmaskLength: 56
-                                allocationMaxNetmaskLength: 64
-                                description: "Ephemeral IPv6 ULA test pool - " + _test_pool_ipv6_ula
-                                labels: {
-                                    "ephemeral": "true"
-                                    "test-run": _now
-                                    "address-family": "ipv6"
-                                }
-                                tags: {
-                                    "hops.ops.com.ai/e2e": "true",
-                                    "hops.ops.com.ai/e2e-persistent": "false",
-                                    "hops.ops.com.ai/e2e-last-run": _now
-                                }
+                                # GUA pools (public, Amazon-provided)
+                                gua: [
+                                    # Global IPv6 public pool - Amazon GUA
+                                    {
+                                        name: "ipv6-public"
+                                        region: _home_region
+                                        locale: _home_region
+                                        netmaskLength: 52  # AWS provisions /52 GUA block
+                                        managementPolicies: _persist
+                                        # Allocations are /56 per VPC
+                                        allocationDefaultNetmaskLength: 56
+                                        allocationMinNetmaskLength: 52
+                                        allocationMaxNetmaskLength: 60
+                                        description: "Global IPv6 public pool (Amazon GUA)"
+                                        if _ipv6_public_pool_external_name:
+                                            externalName: _ipv6_public_pool_external_name
+                                        if _ipv6_public_cidr_external_name:
+                                            cidrExternalName: _ipv6_public_cidr_external_name
+                                        labels: {
+                                            "pool-type": "global"
+                                        }
+                                        tags: {
+                                            "hops.ops.com.ai/e2e": "true",
+                                            "hops.ops.com.ai/e2e-persistent": "true"
+                                        }
+                                    }
+                                ]
                             }
-                        ]
+                        }
                     }
                 }
             ]

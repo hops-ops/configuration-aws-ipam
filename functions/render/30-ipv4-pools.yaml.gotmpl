@@ -5,17 +5,11 @@
 # ===============
 # This template renders VPCIpamPool, VPCIpamPoolCidr, and Usage resources for IPv4 pools.
 #
-# Pool Types:
-# - Top-level pools: Have their own CIDR and use a scope (private/public/custom)
-# - Child pools: Reference a parent via sourcePoolRef, inherit parent's scope
+# IPv4 pools always use private scope (default or custom via scopeRef).
+# Child pools reference a parent via sourcePoolRef and inherit parent's scope.
 #
 
-{{- range $pool := $ipamPools }}
-
-  {{- $addressFamily := $pool.addressFamily | default "ipv4" }}
-  {{- if ne $addressFamily "ipv4" }}
-    {{- continue }}
-  {{- end }}
+{{- range $pool := $ipv4Pools }}
 
   # ============================================================================
   # IPv4 Pool: {{ $pool.name }}
@@ -25,7 +19,6 @@
 
   # --- Pool Configuration ---
   {{- $poolCidr := $pool.cidr | default "" }}
-  {{- $poolScope := $pool.scope | default "private" }}
   {{- $poolScopeRef := $pool.scopeRef | default "" }}
   {{- $sourcePoolRef := $pool.sourcePoolRef | default "" }}
   {{- $poolExternalName := $pool.externalName | default "" }}
@@ -35,7 +28,6 @@
 
   # --- Pool Type Flags ---
   {{- $isChildPool := ne $sourcePoolRef "" }}
-  {{- $isPublicPool := eq $poolScope "public" }}
   {{- $usesCustomScope := and $poolScopeRef (hasKey $customScopeNames $poolScopeRef) }}
 
   # --- Validation: Pool needs name AND (cidr OR netmaskLength OR is child) ---
@@ -57,6 +49,7 @@
   # ===========================================================================
   # Rendering Gate
   # ===========================================================================
+  # IPv4 pools always use private scope
   {{- $canRenderPool := true }}
 
   {{- if $isChildPool }}
@@ -65,11 +58,8 @@
     {{- end }}
   {{- else if $usesCustomScope }}
     # Custom scope: no gating needed, ipamScopeIdRef handles the dependency
-  {{- else if $isPublicPool }}
-    {{- if not $observedDefaultPublicScopeId }}
-      {{- $canRenderPool = false }}
-    {{- end }}
   {{- else }}
+    # Private scope (default): needs IPAM's defaultPrivateScopeId
     {{- if not $observedDefaultPrivateScopeId }}
       {{- $canRenderPool = false }}
     {{- end }}
@@ -124,9 +114,8 @@ spec:
     {{- else if $usesCustomScope }}
     ipamScopeIdRef:
       name: {{ printf "%s-scope-%s" $name $poolScopeRef }}
-    {{- else if $isPublicPool }}
-    ipamScopeId: {{ $observedDefaultPublicScopeId }}
     {{- else }}
+    # Private scope (default for IPv4)
     ipamScopeId: {{ $observedDefaultPrivateScopeId }}
     {{- end }}
     locale: {{ $poolLocale }}

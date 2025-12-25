@@ -54,15 +54,32 @@
 #
 {{ $observedPools := dict }}
 
-{{ range $pool := $ipamPools }}
+# IPv4 pools
+{{ range $pool := $ipv4Pools }}
   {{- $poolName := $pool.name }}
   {{- $poolKey := printf "ipam-pool-%s" $poolName }}
-
   {{- $poolObs := get $observed $poolKey | default (dict) }}
-  {{- $poolResource := $poolObs.resource | default (dict) }}
-  {{- $poolStatus := $poolResource.status | default (dict) }}
-  {{- $poolAtProvider := $poolStatus.atProvider | default (dict) }}
+  {{- $poolAtProvider := (($poolObs.resource | default (dict)).status | default (dict)).atProvider | default (dict) }}
+  {{- $poolData := dict "id" ($poolAtProvider.id | default "") "arn" ($poolAtProvider.arn | default "") "ipamScopeId" ($poolAtProvider.ipamScopeId | default "") }}
+  {{- $_ := set $observedPools $poolName $poolData }}
+{{ end }}
 
+# IPv6 ULA pools
+{{ range $pool := $ipv6ULAPools }}
+  {{- $poolName := $pool.name }}
+  {{- $poolKey := printf "ipam-pool-%s" $poolName }}
+  {{- $poolObs := get $observed $poolKey | default (dict) }}
+  {{- $poolAtProvider := (($poolObs.resource | default (dict)).status | default (dict)).atProvider | default (dict) }}
+  {{- $poolData := dict "id" ($poolAtProvider.id | default "") "arn" ($poolAtProvider.arn | default "") "ipamScopeId" ($poolAtProvider.ipamScopeId | default "") }}
+  {{- $_ := set $observedPools $poolName $poolData }}
+{{ end }}
+
+# IPv6 GUA pools
+{{ range $pool := $ipv6GUAPools }}
+  {{- $poolName := $pool.name }}
+  {{- $poolKey := printf "ipam-pool-%s" $poolName }}
+  {{- $poolObs := get $observed $poolKey | default (dict) }}
+  {{- $poolAtProvider := (($poolObs.resource | default (dict)).status | default (dict)).atProvider | default (dict) }}
   {{- $poolData := dict "id" ($poolAtProvider.id | default "") "arn" ($poolAtProvider.arn | default "") "ipamScopeId" ($poolAtProvider.ipamScopeId | default "") }}
   {{- $_ := set $observedPools $poolName $poolData }}
 {{ end }}

@@ -71,12 +71,11 @@ _items = [
                     spec: {
                         managementPolicies: ["*"]
                         forProvider: {
+                            addressFamily: "ipv4"
                             ipamScopeId: "ipam-scope-private-0123456789"
                             locale: "us-west-2"
                             allocationDefaultNetmaskLength: 16
                             tags: {
-                                owner: "platform"
-                                environment: "dev"
                                 hops: "true"
                             }
                         }
@@ -98,109 +97,12 @@ _items = [
             ]
         }
     },
-    # Test hierarchical pool structure (global + regional via sourcePoolRef)
-    metav1alpha1.CompositionTest{
-        metadata.name: "test-ipam-hierarchical-pools"
-        spec = {
-            compositionPath: "apis/ipams/composition.yaml"
-            xrPath: "examples/ipams/multi-region.yaml"
-            xrdPath: "apis/ipams/definition.yaml"
-            timeoutSeconds: 120
-            validate: True
-            observedResources: [
-                {
-                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
-                    kind: "VPCIpam"
-                    metadata: {
-                        name: "workloads"
-                        annotations: {
-                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam"
-                            "crossplane.io/composition-resource-name": "ipam"
-                        }
-                    }
-                    status: {
-                        conditions: [{ type: "Ready", status: "True" }]
-                        atProvider: {
-                            id: "ipam-hierarchical"
-                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam/ipam-hierarchical"
-                            defaultPrivateScopeId: "ipam-scope-private-hierarchical"
-                            defaultPublicScopeId: "ipam-scope-public-hierarchical"
-                        }
-                    }
-                },
-                # Global pool
-                {
-                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
-                    kind: "VPCIpamPool"
-                    metadata: {
-                        name: "workloads-global"
-                        annotations: {
-                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-global"
-                            "crossplane.io/composition-resource-name": "ipam-pool-global"
-                        }
-                    }
-                    status: {
-                        conditions: [{ type: "Ready", status: "True" }]
-                        atProvider: {
-                            id: "ipam-pool-global"
-                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-global"
-                            ipamScopeId: "ipam-scope-private-hierarchical"
-                        }
-                    }
-                },
-                {
-                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
-                    kind: "VPCIpamPoolCidr"
-                    metadata: {
-                        name: "workloads-global-cidr"
-                        annotations: {
-                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-cidr-global"
-                            "crossplane.io/composition-resource-name": "ipam-pool-cidr-global"
-                        }
-                    }
-                    status: {
-                        conditions: [{ type: "Ready", status: "True" }]
-                        atProvider: { id: "ipam-pool-cidr-global" }
-                    }
-                }
-            ]
-            assertResources: [
-                # Global pool should be created
-                {
-                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
-                    kind: "VPCIpamPool"
-                    metadata: { name: "workloads-global" }
-                    spec: {
-                        forProvider: {
-                            addressFamily: "ipv4"
-                            ipamScopeId: "ipam-scope-private-hierarchical"
-                            allocationDefaultNetmaskLength: 12
-                        }
-                    }
-                },
-                # Regional pool should use sourceIpamPoolId from parent
-                {
-                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
-                    kind: "VPCIpamPool"
-                    metadata: { name: "workloads-workloads-east" }
-                    spec: {
-                        forProvider: {
-                            sourceIpamPoolId: "ipam-pool-global"
-                            ipamScopeId: "ipam-scope-private-hierarchical"
-                            locale: "us-east-1"
-                            allocationDefaultNetmaskLength: 16
-                        }
-                    }
-                }
-            ]
-        }
-    },
-    # Test dual-stack IPAM with IPv4 and IPv6 pools
+    # Test dual-stack IPAM with IPv4, IPv6 ULA, and IPv6 GUA pools
     metav1alpha1.CompositionTest{
         metadata.name: "test-ipam-dual-stack"
         spec = {
             compositionPath: "apis/ipams/composition.yaml"
-            xrPath: "examples/ipams/dual-stack.yaml"
+            xrPath: "examples/ipams/standard.yaml"
             xrdPath: "apis/ipams/definition.yaml"
             timeoutSeconds: 120
             validate: True
@@ -235,11 +137,11 @@ _items = [
                     spec: {
                         forProvider: {
                             addressFamily: "ipv4"
-                            allocationDefaultNetmaskLength: 16
+                            allocationDefaultNetmaskLength: 12
                         }
                     }
                 },
-                # IPv6 ULA pool should have addressFamily: ipv6
+                # IPv6 ULA pool should have addressFamily: ipv6, private scope
                 {
                     apiVersion: "ec2.aws.m.upbound.io/v1beta1"
                     kind: "VPCIpamPool"
@@ -247,11 +149,12 @@ _items = [
                     spec: {
                         forProvider: {
                             addressFamily: "ipv6"
-                            allocationDefaultNetmaskLength: 48
+                            ipamScopeId: "ipam-scope-private-dualstack"
+                            allocationDefaultNetmaskLength: 56
                         }
                     }
                 },
-                # IPv6 GUA pool should have addressFamily: ipv6
+                # IPv6 GUA pool should have addressFamily: ipv6, public scope
                 {
                     apiVersion: "ec2.aws.m.upbound.io/v1beta1"
                     kind: "VPCIpamPool"
@@ -259,6 +162,7 @@ _items = [
                     spec: {
                         forProvider: {
                             addressFamily: "ipv6"
+                            ipamScopeId: "ipam-scope-public-dualstack"
                             allocationDefaultNetmaskLength: 56
                             publicIpSource: "amazon"
                             awsService: "ec2"

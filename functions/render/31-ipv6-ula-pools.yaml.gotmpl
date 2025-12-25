@@ -9,15 +9,7 @@
 # These are for private IPv6 networks, similar to RFC 1918 for IPv4.
 #
 
-{{- range $pool := $ipamPools }}
-
-  {{- $addressFamily := $pool.addressFamily | default "ipv4" }}
-  {{- $amazonProvided := $pool.amazonProvidedIpv6CidrBlock | default false }}
-
-  # Skip non-IPv6 or amazon-provided (GUA) pools
-  {{- if or (ne $addressFamily "ipv6") $amazonProvided }}
-    {{- continue }}
-  {{- end }}
+{{- range $pool := $ipv6ULAPools }}
 
   # ============================================================================
   # IPv6 ULA Pool: {{ $pool.name }}
@@ -26,8 +18,7 @@
   {{- $poolName := $pool.name }}
 
   # --- Pool Configuration ---
-  {{- $poolCidr := $pool.cidr | default "" }}
-  {{- $poolScope := $pool.scope | default "private" }}
+  # ULA pools are always private scope
   {{- $poolScopeRef := $pool.scopeRef | default "" }}
   {{- $sourcePoolRef := $pool.sourcePoolRef | default "" }}
   {{- $poolExternalName := $pool.externalName | default "" }}
@@ -39,8 +30,8 @@
   {{- $isChildPool := ne $sourcePoolRef "" }}
   {{- $usesCustomScope := and $poolScopeRef (hasKey $customScopeNames $poolScopeRef) }}
 
-  # --- Validation: Pool needs name AND (cidr OR netmaskLength OR is child) ---
-  {{- $hasValidCidr := or $poolCidr $poolNetmaskLength $isChildPool }}
+  # --- Validation: Pool needs name AND (netmaskLength OR is child) ---
+  {{- $hasValidCidr := or $poolNetmaskLength $isChildPool }}
 
   # --- Parent Pool Data (for child pools only) ---
   {{- $parentPoolId := "" }}
@@ -245,7 +236,7 @@ spec:
     # -------------------------------------------------------------------------
     # ULA pools use netmaskLength - AWS auto-assigns from fd00::/8
     {{- $poolCidrExternalName := $pool.cidrExternalName | default "" }}
-    {{- $needsCidrResource := and (or $poolCidr $poolNetmaskLength) (not $isChildPool) }}
+    {{- $needsCidrResource := and $poolNetmaskLength (not $isChildPool) }}
     {{- if $needsCidrResource }}
 
 ---
@@ -263,11 +254,7 @@ metadata:
 spec:
   managementPolicies: {{ toYaml $poolMgmtPolicies | nindent 4 }}
   forProvider:
-    {{- if $poolCidr }}
-    cidr: {{ $poolCidr }}
-    {{- else if $poolNetmaskLength }}
     netmaskLength: {{ $poolNetmaskLength }}
-    {{- end }}
     ipamPoolIdRef:
       name: {{ $poolResourceName }}
     region: {{ $poolRegion }}
