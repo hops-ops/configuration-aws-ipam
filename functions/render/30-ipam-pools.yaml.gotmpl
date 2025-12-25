@@ -82,13 +82,13 @@
 
   {{- else if $isPublicPool }}
     # Public scope: needs IPAM's defaultPublicScopeId
-    {{- if not $observeddefaultPublicScopeId }}
+    {{- if not $observedDefaultPublicScopeId }}
       {{- $canRenderPool = false }}
     {{- end }}
 
   {{- else }}
     # Private scope (default): needs IPAM's defaultPrivateScopeId
-    {{- if not $observeddefaultPrivateScopeId }}
+    {{- if not $observedDefaultPrivateScopeId }}
       {{- $canRenderPool = false }}
     {{- end }}
 
@@ -147,10 +147,10 @@ spec:
       name: {{ printf "%s-scope-%s" $name $poolScopeRef }}
     {{- else if $isPublicPool }}
     # Public scope: use IPAM's default public scope
-    ipamScopeId: {{ $observeddefaultPublicScopeId }}
+    ipamScopeId: {{ $observedDefaultPublicScopeId }}
     {{- else }}
     # Private scope (default): use IPAM's default private scope
-    ipamScopeId: {{ $observeddefaultPrivateScopeId }}
+    ipamScopeId: {{ $observedDefaultPrivateScopeId }}
     {{- end }}
     locale: {{ $poolLocale }}
     region: {{ $poolRegion }}
