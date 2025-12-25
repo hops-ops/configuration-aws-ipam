@@ -1,26 +1,21 @@
 # e2etest-ipam - Persistent IPAM for dual-stack VPC provisioning
 # ==============================================================
-# Creates IPAM with IPv4 + IPv6 pools for VPC/subnet allocation.
-# Global pools are persistent (orphaned via managementPolicies without Delete).
-# Subnet pools have full management for cleanup of previously orphaned resources.
+# Creates IPAM with Global + Regional pools for VPC allocation.
+# Pools are persistent (orphaned via managementPolicies without Delete).
+#
+# Architecture (per foundation-design/00-overview.md):
+# - IPAM creates: Global pools + Regional pools
+# - NetworkAllocation creates: VPC pool, Subnet pools, Allocations
 #
 # After first run, update externalName fields with actual IDs to import.
-# These same resources are used by aws-foundation and aws-network e2e tests.
+# These resources are used by aws-foundation and aws-network e2e tests.
 #
-# Global pools (persistent - no Delete):
-# - ipv4: 10.0.0.0/8 for VPC IPv4 CIDRs
-# - ipv6-public: Amazon-provided GUA for internet-routable workloads
-# - ipv6-private: ULA /48 for private IPv6 workloads
-#
-# Subnet pools (ephemeral - created/deleted each run):
-# - ipv4-subnets: child pool for subnet allocations
-# - ipv6-private-subnets: child pool for IPv6 subnet allocations
-#
-# Ephemeral test pools (deleted after test):
-# - aws-ipam-<timestamp>: test pool with automatic subnet pool
-# - aws-ipam-<timestamp>-subnets: auto-created child pool
-# - ipv6-ula-<timestamp>: IPv6 ULA test pool with automatic subnet pool
-# - ipv6-ula-<timestamp>-subnets: auto-created IPv6 child pool
+# Pool hierarchy:
+#   ipv4 (10.0.0.0/8) - global
+#     └── ipv4-us-east-2 (10.0.0.0/12) - regional, allocates /16 VPCs
+#   ipv6-private (/32 ULA) - global
+#     └── (regional pools TBD)
+#   ipv6-public (/52 GUA) - global, Amazon-provided
 
 import base64
 import datetime
@@ -46,9 +41,8 @@ _home_region = "us-east-2"
 _persist = ["Create", "Observe", "Update", "LateInitialize"]
 
 # Ephemeral test pool names - deleted after test
-_test_pool_name = "aws-ipam-" + _now
-_test_pool_ipv6_ula = "ipv6-ula-" + _now
-_test_pool_ipv6_gua = "ipv6-gua-" + _now
+_test_pool_name = "test-ipv4-" + _now
+_test_pool_ipv6_ula = "test-ipv6-ula-" + _now
 
 # =============================================================================
 # Existing resource IDs (update after first successful run)
@@ -56,26 +50,27 @@ _test_pool_ipv6_gua = "ipv6-gua-" + _now
 # After running once, get IDs with:
 #   aws ec2 describe-ipams --query 'Ipams[*].[IpamId,Tags]'
 #   aws ec2 describe-ipam-pools --query 'IpamPools[*].[IpamPoolId,Description]'
-#   aws ec2 describe-ipam-pool-cidrs --ipam-pool-id <pool-id> --query 'IpamPoolCidrs[*].IpamPoolCidrId'
+#   aws ec2 describe-ipam-pool-cidrs --ipam-pool-id <pool-id>
 #
 _ipam_external_name = "ipam-0573c7815d0a36e00"
 
-# IPv4 pool (cidrExternalName format: cidr_pool-id)
-_ipv4_pool_external_name = "ipam-pool-0a82c73b97dc0dabb"
-_ipv4_cidr_external_name = "10.0.0.0/8" + "_" + _ipv4_pool_external_name
+# Global IPv4 pool (cidrExternalName format: cidr_pool-id)
+_ipv4_global_pool_external_name = "ipam-pool-0a82c73b97dc0dabb"
+_ipv4_global_cidr_external_name = "10.0.0.0/8" + "_" + _ipv4_global_pool_external_name
 
-# IPv6 public pool - cidrExternalName format: cidr_pool-id
+# Regional IPv4 pool for us-east-2 (child of global)
+# Update after first run with: aws ec2 describe-ipam-pools --query 'IpamPools[?contains(Description, `regional`)].IpamPoolId'
+_ipv4_regional_useast2_external_name = ""  # Update after first run
+_ipv4_regional_useast2_cidr_external_name = ""  # Update after first run
+
+# IPv6 public pool (Amazon GUA) - cidrExternalName format: cidr_pool-id
 _ipv6_public_pool_external_name = "ipam-pool-06b3ec78deea8bcb9"
 _ipv6_public_cidr_external_name = "2600:1f26:47:c000::/52" + "_" + _ipv6_public_pool_external_name
 
-# IPv6 private pool (ULA) - cidrExternalName format: cidr_pool-id
-_ipv6_private_pool_external_name = "ipam-pool-0decd6c5216660c74"
-_ipv6_private_cidr_external_name = "fdc4:f045:5323::/48" + "_" + _ipv6_private_pool_external_name
-
-# Subnet pools (child pools created via subnetPool.enabled)
-# Update after first run with: aws ec2 describe-ipam-pools --query 'IpamPools[?contains(Description, `subnet`)].IpamPoolId'
-_ipv4_subnet_pool_external_name = "ipam-pool-0eac78aa2a229f757"
-_ipv6_private_subnet_pool_external_name = "ipam-pool-0888a212e86abbf13"
+# IPv6 private pool (ULA /32) - will be new pool
+# Note: /32 is the largest ULA block AWS allows
+_ipv6_private_pool_external_name = ""  # Update after first run
+_ipv6_private_cidr_external_name = ""  # Will be auto-assigned ULA /32
 
 _items = [
     metav1alpha1.E2ETest{
@@ -95,49 +90,76 @@ _items = [
                         managementPolicies: _persist
                         managementMode: "self"
                         scope: "private"
-                        homeRegion: _home_region
+                        region: _home_region
                         operatingRegions: [_home_region]
                         if _ipam_external_name:
                             externalName: _ipam_external_name
                         pools: [
-                            # IPv4 pool for VPCs with persistent subnet pool
+                            # ==========================================================
+                            # GLOBAL IPv4 POOL - Top of hierarchy
+                            # ==========================================================
                             {
                                 name: "ipv4"
                                 addressFamily: "ipv4"
                                 region: _home_region
                                 cidr: "10.0.0.0/8"
                                 managementPolicies: _persist
-                                allocationDefaultNetmaskLength: 20
-                                allocationMinNetmaskLength: 16
-                                allocationMaxNetmaskLength: 24
-                                description: "IPv4 pool for VPCs"
-                                if _ipv4_pool_external_name:
-                                    externalName: _ipv4_pool_external_name
-                                if _ipv4_cidr_external_name:
-                                    cidrExternalName: _ipv4_cidr_external_name
+                                # Allocations from this pool are /12 regional pools
+                                allocationDefaultNetmaskLength: 12
+                                allocationMinNetmaskLength: 10
+                                allocationMaxNetmaskLength: 16
+                                description: "Global IPv4 pool"
+                                if _ipv4_global_pool_external_name:
+                                    externalName: _ipv4_global_pool_external_name
+                                if _ipv4_global_cidr_external_name:
+                                    cidrExternalName: _ipv4_global_cidr_external_name
                                 labels: {
                                     "address-family": "ipv4"
+                                    "pool-type": "global"
                                     "hops.ops.com.ai/global-pool": "ipv4"
                                 }
                                 tags: {
-                                    purpose: "vpc-ipv4"
-                                }
-                                # Test Subnet pool for network allocations - cleaned up after test
-                                subnetPool: {
-                                    enabled: True
-                                    managementPolicies: ["*"]
-                                    if _ipv4_subnet_pool_external_name:
-                                        externalName: _ipv4_subnet_pool_external_name
-                                    allocationDefaultNetmaskLength: 24
-                                    allocationMinNetmaskLength: 20
-                                    allocationMaxNetmaskLength: 28
-                                    description: "IPv4 subnet pool for network allocations"
-                                    tags: {
-                                        purpose: "subnet-ipv4"
-                                    }
+                                    purpose: "global-ipv4"
                                 }
                             },
-                            # IPv6 Public Pool (Amazon-provided GUA)
+
+                            # ==========================================================
+                            # REGIONAL IPv4 POOL - us-east-2
+                            # Child of global ipv4 pool. NetworkAllocation uses this.
+                            # ==========================================================
+                            {
+                                name: "ipv4-us-east-2"
+                                addressFamily: "ipv4"
+                                sourcePoolRef: "ipv4"  # Child of global pool
+                                region: _home_region
+                                locale: _home_region
+                                cidr: "10.0.0.0/12"  # 10.0.0.0 - 10.15.255.255
+                                managementPolicies: _persist
+                                # Allocations from this pool are /16-/20 VPCs
+                                allocationDefaultNetmaskLength: 16
+                                allocationMinNetmaskLength: 16
+                                allocationMaxNetmaskLength: 20
+                                description: "Regional IPv4 pool for us-east-2"
+                                if _ipv4_regional_useast2_external_name:
+                                    externalName: _ipv4_regional_useast2_external_name
+                                if _ipv4_regional_useast2_cidr_external_name:
+                                    cidrExternalName: _ipv4_regional_useast2_cidr_external_name
+                                labels: {
+                                    "address-family": "ipv4"
+                                    "pool-type": "regional"
+                                    "region": "us-east-2"
+                                    "hops.ops.com.ai/regional-pool": "ipv4-us-east-2"
+                                }
+                                tags: {
+                                    purpose: "regional-ipv4"
+                                    region: "us-east-2"
+                                }
+                            },
+
+                            # ==========================================================
+                            # GLOBAL IPv6 PUBLIC POOL - Amazon GUA
+                            # For internet-routable workloads
+                            # ==========================================================
                             {
                                 name: "ipv6-public"
                                 addressFamily: "ipv6"
@@ -147,73 +169,69 @@ _items = [
                                 amazonProvidedIpv6CidrBlock: True
                                 publicIpSource: "amazon"
                                 awsService: "ec2"
-                                netmaskLength: 52  # AWS provisions /52 GUA block (16 x /56 VPC allocations)
+                                netmaskLength: 52  # AWS provisions /52 GUA block
                                 managementPolicies: _persist
+                                # Allocations are /56 per VPC
                                 allocationDefaultNetmaskLength: 56
                                 allocationMinNetmaskLength: 52
                                 allocationMaxNetmaskLength: 60
-                                description: "Public IPv6 pool (Amazon GUA)"
+                                description: "Global IPv6 public pool (Amazon GUA)"
                                 if _ipv6_public_pool_external_name:
                                     externalName: _ipv6_public_pool_external_name
                                 if _ipv6_public_cidr_external_name:
                                     cidrExternalName: _ipv6_public_cidr_external_name
                                 labels: {
                                     "address-family": "ipv6"
+                                    "pool-type": "global"
                                     "ipv6-type": "public"
                                 }
                                 tags: {
-                                    purpose: "vpc-ipv6-public"
+                                    purpose: "global-ipv6-public"
                                 }
                             },
-                            # IPv6 Private Pool (ULA - AWS auto-assigns from fd00::/8) with persistent subnet pool
+
+                            # ==========================================================
+                            # GLOBAL IPv6 PRIVATE POOL - ULA /32
+                            # Largest ULA block AWS allows. Room for 65536 x /48 pools.
+                            # ==========================================================
                             {
                                 name: "ipv6-private"
                                 addressFamily: "ipv6"
                                 scope: "private"
                                 region: _home_region
                                 locale: _home_region
-                                netmaskLength: 48  # AWS auto-assigns ULA CIDR
-                                managementPolicies: ["*"]
-                                allocationDefaultNetmaskLength: 56
-                                allocationMinNetmaskLength: 48
-                                allocationMaxNetmaskLength: 64
-                                description: "Private IPv6 pool (ULA)"
+                                netmaskLength: 32  # Largest ULA block AWS allows
+                                managementPolicies: _persist
+                                # Allocations are /48 regional pools or /56 VPCs
+                                allocationDefaultNetmaskLength: 48
+                                allocationMinNetmaskLength: 40
+                                allocationMaxNetmaskLength: 56
+                                description: "Global IPv6 private pool (ULA /32)"
                                 if _ipv6_private_pool_external_name:
                                     externalName: _ipv6_private_pool_external_name
                                 if _ipv6_private_cidr_external_name:
                                     cidrExternalName: _ipv6_private_cidr_external_name
                                 labels: {
                                     "address-family": "ipv6"
+                                    "pool-type": "global"
                                     "ipv6-type": "private"
                                     "hops.ops.com.ai/global-pool": "ipv6-private"
                                 }
                                 tags: {
-                                    purpose: "vpc-ipv6-private"
-                                }
-                                # Subnet pool for network allocations (inherits ipv6) - full management to clean up orphaned pools
-                                subnetPool: {
-                                    enabled: True
-                                    managementPolicies: ["*"]
-                                    if _ipv6_private_subnet_pool_external_name:
-                                        externalName: _ipv6_private_subnet_pool_external_name
-                                    allocationDefaultNetmaskLength: 64
-                                    allocationMinNetmaskLength: 56
-                                    allocationMaxNetmaskLength: 64
-                                    description: "IPv6 ULA subnet pool for network allocations"
-                                    tags: {
-                                        purpose: "subnet-ipv6-private"
-                                    }
+                                    purpose: "global-ipv6-private"
                                 }
                             },
-                            # Ephemeral test pool - deleted after test run
-                            # Uses subnetPool.enabled to auto-create child subnet pool
+
+                            # ==========================================================
+                            # EPHEMERAL TEST POOLS - deleted after test
+                            # Tests that pool creation/deletion works correctly
+                            # ==========================================================
                             {
                                 name: _test_pool_name
                                 addressFamily: "ipv4"
                                 region: _home_region
                                 cidr: "172.31.0.0/16"
-                                # Full management - gets deleted
-                                managementPolicies: ["*"]
+                                managementPolicies: ["*"]  # Full management - gets deleted
                                 allocationDefaultNetmaskLength: 24
                                 allocationMinNetmaskLength: 20
                                 allocationMaxNetmaskLength: 28
@@ -221,35 +239,20 @@ _items = [
                                 labels: {
                                     "ephemeral": "true"
                                     "test-run": _now
-                                    "hops.ops.com.ai/global-pool": _test_pool_name
                                 }
                                 tags: {
                                     purpose: "e2e-test"
                                     "test-run": _now
                                 }
-                                # Auto-create subnet pool named ${name}-subnets
-                                subnetPool: {
-                                    enabled: True
-                                    allocationDefaultNetmaskLength: 28
-                                    allocationMinNetmaskLength: 26
-                                    allocationMaxNetmaskLength: 28
-                                    description: "Auto-created subnet pool for " + _test_pool_name
-                                    tags: {
-                                        purpose: "e2e-test-subnet-pool"
-                                        "test-run": _now
-                                    }
-                                }
                             },
-                            # Ephemeral IPv6 Private Pool (ULA) with subnet pool
-                            # Tests that subnetPool inherits addressFamily: ipv6 from parent
                             {
                                 name: _test_pool_ipv6_ula
                                 addressFamily: "ipv6"
                                 scope: "private"
                                 region: _home_region
                                 locale: _home_region
-                                netmaskLength: 56  # AWS auto-assigns ULA CIDR
-                                managementPolicies: ["*"]
+                                netmaskLength: 56  # Small ULA for testing
+                                managementPolicies: ["*"]  # Full management - gets deleted
                                 allocationDefaultNetmaskLength: 60
                                 allocationMinNetmaskLength: 56
                                 allocationMaxNetmaskLength: 64
@@ -258,23 +261,10 @@ _items = [
                                     "ephemeral": "true"
                                     "test-run": _now
                                     "address-family": "ipv6"
-                                    "ipv6-type": "private-ula"
                                 }
                                 tags: {
                                     purpose: "e2e-test-ipv6-ula"
                                     "test-run": _now
-                                }
-                                # Auto-create subnet pool - should inherit ipv6 addressFamily
-                                subnetPool: {
-                                    enabled: True
-                                    allocationDefaultNetmaskLength: 64
-                                    allocationMinNetmaskLength: 60
-                                    allocationMaxNetmaskLength: 64
-                                    description: "Auto-created IPv6 ULA subnet pool for " + _test_pool_ipv6_ula
-                                    tags: {
-                                        purpose: "e2e-test-ipv6-ula-subnet-pool"
-                                        "test-run": _now
-                                    }
                                 }
                             }
                         ]

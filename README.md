@@ -38,7 +38,7 @@ spec:
   managementPolicies: ["*"]
   providerConfigName: default
   scope: private  # Single-account IPAM
-  homeRegion: us-east-1
+  region: us-east-1
   operatingRegions: [us-east-1]
 
   pools:
@@ -120,7 +120,7 @@ metadata:
 spec:
   providerConfigName: default
   scope: private
-  homeRegion: us-east-1
+  region: us-east-1
   operatingRegions: [us-east-1, us-west-2, eu-west-1]
 
   pools:
@@ -165,7 +165,7 @@ metadata:
 spec:
   providerConfigName: shared-services  # Run from shared-services account
   scope: private
-  homeRegion: us-east-1
+  region: us-east-1
   operatingRegions: [us-east-1, us-west-2]
 
   pools:
@@ -219,7 +219,7 @@ spec:
 
   providerConfigName: default
   scope: private
-  homeRegion: us-east-1
+  region: us-east-1
   operatingRegions: [us-east-1]
 
   pools:

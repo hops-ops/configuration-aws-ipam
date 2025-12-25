@@ -12,23 +12,9 @@ E2E_TESTS := $(wildcard tests/e2etest-*)
 # Format: example_path::observed_resources_path (observed_resources_path is optional)
 EXAMPLES := \
 	examples/ipams/minimal.yaml:: \
-	examples/ipams/multi-region.yaml:: \
-	examples/ipams/private-ipv6.yaml:: \
-	examples/ipams/private-ipv6.yaml::examples/test/mocks/observed-resources/private-ipv6/steps/1 \
-	examples/ipams/private-ipv6.yaml::examples/test/mocks/observed-resources/private-ipv6/steps/2 \
-	examples/ipams/private-ipv6.yaml::examples/test/mocks/observed-resources/private-ipv6/steps/3 \
-	examples/ipams/with-subnet-pool.yaml:: \
-	examples/ipams/with-subnet-pool.yaml::examples/test/mocks/observed-resources/with-subnet-pool/steps/1 \
-	examples/ipams/with-subnet-pool.yaml::examples/test/mocks/observed-resources/with-subnet-pool/steps/2 \
-	examples/ipams/with-subnet-pool.yaml::examples/test/mocks/observed-resources/with-subnet-pool/steps/3 \
-	examples/ipams/with-auto-subnet-pool.yaml:: \
-	examples/ipams/with-auto-subnet-pool.yaml::examples/test/mocks/observed-resources/with-auto-subnet-pool/steps/1 \
-	examples/ipams/with-auto-subnet-pool.yaml::examples/test/mocks/observed-resources/with-auto-subnet-pool/steps/2 \
-	examples/ipams/with-auto-subnet-pool.yaml::examples/test/mocks/observed-resources/with-auto-subnet-pool/steps/3 \
-	examples/ipams/with-subnet-pools.yaml:: \
-	examples/ipams/with-subnet-pools.yaml::examples/test/mocks/observed-resources/with-subnet-pools/steps/1 \
-	examples/ipams/with-subnet-pools.yaml::examples/test/mocks/observed-resources/with-subnet-pools/steps/2 \
-	examples/ipams/with-subnet-pools.yaml::examples/test/mocks/observed-resources/with-subnet-pools/steps/3
+	examples/ipams/multi-region.yaml::examples/test/mocks/observed-resources/multi-region/steps/1/ \
+	examples/ipams/dual-stack.yaml::examples/test/mocks/observed-resources/dual-stack/steps/3/ \
+	examples/ipams/management-policies.yaml::
 
 clean:
 	rm -rf _output

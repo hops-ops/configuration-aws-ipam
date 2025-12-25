@@ -1,15 +1,12 @@
 apiVersion: aws.hops.ops.com.ai/v1alpha1
 kind: IPAM
 metadata:
-  name: platform-ipam
+  name: platform
   namespace: example-env
 spec:
-  organizationName: platform
-  managementMode: self
-  scope: delegated-organization
-  delegatedAdminAccountRef:
+  providerConfigRef:
     name: platform-root
-  homeRegion: us-west-2
+  region: us-west-2
   operatingRegions:
     - us-west-2
   pools:
