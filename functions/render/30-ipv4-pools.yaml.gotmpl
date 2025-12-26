@@ -70,8 +70,8 @@
   {{- if and $poolName $hasValidCidr $canRenderPool }}
 
     # --- Computed Values ---
-    {{- $poolRegion := $pool.region | default $pool.locale | default $region }}
-    {{- $poolLocale := $pool.locale | default $poolRegion }}
+    {{- $poolRegion := $pool.region | default $region }}
+    {{- $poolLocale := $pool.locale | default "" }}
     {{- $poolLabels := merge (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default (dict)) }}
     {{- $poolTags := merge $defaultAWSTags ($pool.tags | default (dict)) }}
     {{- $poolResourceName := printf "%s-%s" $name $poolName }}
@@ -119,7 +119,9 @@ spec:
     # Private scope (default for IPv4)
     ipamScopeId: {{ $observedPrivateDefaultScopeId }}
     {{- end }}
+    {{- if $poolLocale }}
     locale: {{ $poolLocale }}
+    {{- end }}
     region: {{ $poolRegion }}
     {{- if $allocationDefault }}
     allocationDefaultNetmaskLength: {{ $allocationDefault }}

@@ -7,8 +7,6 @@ spec:
   providerConfigRef:
     name: platform-root
   region: us-west-2
-  operatingRegions:
-    - us-west-2
   pools:
     ipv4:
       - name: platform-shared

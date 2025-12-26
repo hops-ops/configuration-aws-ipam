@@ -73,7 +73,7 @@ _items = [
                         forProvider: {
                             addressFamily: "ipv4"
                             ipamScopeId: "ipam-scope-private-0123456789"
-                            locale: "us-west-2"
+                            region: "us-west-2"
                             allocationDefaultNetmaskLength: 16
                             tags: {
                                 hops: "true"
