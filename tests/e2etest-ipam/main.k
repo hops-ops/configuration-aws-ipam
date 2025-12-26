@@ -61,8 +61,7 @@ _ipv4_global_cidr_external_name = "10.0.0.0/8" + "_" + _ipv4_global_pool_externa
 
 # Regional IPv4 pool for us-east-2 (child of global)
 # Update after first run with: aws ec2 describe-ipam-pools --query 'IpamPools[?contains(Description, `regional`)].IpamPoolId'
-_ipv4_regional_useast2_external_name = ""  # Update after first run
-_ipv4_regional_useast2_cidr_external_name = ""  # Update after first run
+_ipv4_regional_useast2_external_name = "ipam-pool-0607416fa3707147a"
 
 # IPv6 public pool (Amazon GUA) - cidrExternalName format: cidr_pool-id
 _ipv6_public_pool_external_name = "ipam-pool-06b3ec78deea8bcb9"
@@ -145,8 +144,6 @@ _items = [
                                     description: "Regional IPv4 pool for us-east-2"
                                     if _ipv4_regional_useast2_external_name:
                                         externalName: _ipv4_regional_useast2_external_name
-                                    if _ipv4_regional_useast2_cidr_external_name:
-                                        cidrExternalName: _ipv4_regional_useast2_cidr_external_name
                                     labels: {
                                         "pool-type": "regional"
                                         "region": "us-east-2"
