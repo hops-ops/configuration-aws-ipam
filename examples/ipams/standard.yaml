@@ -13,14 +13,10 @@ spec:
   providerConfigRef:
     name: default
   region: us-east-1
-  operatingRegions:
-    - us-east-1
-    - us-west-2
   pools:
     ipv4:
       # IPv4 global pool - top of hierarchy
       - name: ipv4
-        region: us-east-1
         cidr: 10.0.0.0/8
         allocations:
           netmaskLength:
@@ -34,8 +30,6 @@ spec:
       # Regional IPv4 pool for us-east-1 (child of global)
       - name: ipv4-us-east-1
         sourcePoolRef: ipv4
-        region: us-east-1
-        locale: us-east-1
         cidr: 10.0.0.0/12
         allocations:
           netmaskLength:
@@ -52,8 +46,6 @@ spec:
         # IPv6 private pool (ULA)
         # AWS auto-assigns from fd00::/8 range
         - name: ipv6-private
-          region: us-east-1
-          locale: us-east-1
           netmaskLength: 48
           allocations:
             netmaskLength:
@@ -68,8 +60,6 @@ spec:
         # Regional IPv6 private pool for us-east-1 (child of global ULA)
         - name: ipv6-private-us-east-1
           sourcePoolRef: ipv6-private
-          region: us-east-1
-          locale: us-east-1
           netmaskLength: 56
           allocations:
             netmaskLength:
@@ -85,13 +75,11 @@ spec:
       gua:
         # IPv6 public pool (Amazon-provided GUA)
         - name: ipv6-public
-          region: us-east-1
-          locale: us-east-1
           netmaskLength: 52
           allocations:
             netmaskLength:
               default: 56
-              min: 52
+              min: 56
               max: 60
           description: Global IPv6 public pool (Amazon GUA)
           labels:

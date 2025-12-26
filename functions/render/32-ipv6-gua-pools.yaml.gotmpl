@@ -66,8 +66,8 @@
   {{- if and $poolName $canRenderPool }}
 
     # --- Computed Values ---
-    {{- $poolRegion := $pool.region | default $pool.locale | default $region }}
-    {{- $poolLocale := $pool.locale | default $poolRegion }}
+    {{- $poolRegion := $pool.region | default $region }}
+    {{- $poolLocale := $pool.locale | default "" }}
     {{- $poolLabels := merge (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default (dict)) }}
     {{- $poolTags := merge $defaultAWSTags ($pool.tags | default (dict)) }}
     {{- $poolResourceName := printf "%s-%s" $name $poolName }}
@@ -112,7 +112,9 @@ spec:
     # Public scope for GUA (internet-routable)
     ipamScopeId: {{ $observedPublicDefaultScopeId }}
     {{- end }}
+    {{- if $poolLocale }}
     locale: {{ $poolLocale }}
+    {{- end }}
     region: {{ $poolRegion }}
     # GUA-specific fields
     publicIpSource: {{ $publicIpSource }}

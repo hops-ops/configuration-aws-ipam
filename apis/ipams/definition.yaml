@@ -71,7 +71,10 @@ spec:
                 description: AWS region hosting the IPAM instance.
               operatingRegions:
                 type: array
-                description: Additional AWS regions where the IPAM can allocate CIDRs. Region is always included.
+                description: |
+                  Additional AWS regions where the IPAM can allocate CIDRs.
+                  Pool regions are automatically included based on each pool's region/locale.
+                  Use this to pre-provision regions before pools are defined there.
                 items:
                   type: string
               scopes:
@@ -165,10 +168,13 @@ spec:
                           description: Reference to a custom scope defined in spec.scopes by name.
                         region:
                           type: string
-                          description: AWS region that owns the pool. Defaults to spec.region.
+                          description: AWS region where the pool resource is managed. Defaults to spec.region.
                         locale:
                           type: string
-                          description: Locale owning the pool. Defaults to the pool region.
+                          description: |
+                            AWS region where CIDRs from this pool can be allocated.
+                            When set, only VPCs in this region can use addresses from the pool.
+                            Leave unset for top-level pools; set on regional child pools.
                         description:
                           type: string
                           description: Optional description attached to the pool.
@@ -259,10 +265,13 @@ spec:
                                 When not set, uses the IPAM's default private scope.
                             region:
                               type: string
-                              description: AWS region that owns the pool. Defaults to spec.region.
+                              description: AWS region where the pool resource is managed. Defaults to spec.region.
                             locale:
                               type: string
-                              description: Locale owning the pool. Defaults to the pool region.
+                              description: |
+                                AWS region where CIDRs from this pool can be allocated.
+                                When set, only VPCs in this region can use addresses from the pool.
+                                Leave unset for top-level pools; set on regional child pools.
                             description:
                               type: string
                               description: Optional description attached to the pool.
@@ -357,10 +366,13 @@ spec:
                               default: ec2
                             region:
                               type: string
-                              description: AWS region that owns the pool. Defaults to spec.region.
+                              description: AWS region where the pool resource is managed. Defaults to spec.region.
                             locale:
                               type: string
-                              description: Locale owning the pool. Defaults to the pool region.
+                              description: |
+                                AWS region where CIDRs from this pool can be allocated.
+                                When set, only VPCs in this region can use addresses from the pool.
+                                Leave unset for top-level pools; set on regional child pools.
                             description:
                               type: string
                               description: Optional description attached to the pool.

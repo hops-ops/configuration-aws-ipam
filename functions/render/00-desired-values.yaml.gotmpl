@@ -75,12 +75,21 @@
   {{- $_ = set $ipamRegionSet . true }}
 {{ end }}
 {{ range $ipv4Pools }}
-  {{- $_ = set $ipamRegionSet (.region | default .locale | default $region) true }}
+  {{- $_ = set $ipamRegionSet (.region | default $region) true }}
+  {{- if .locale }}
+    {{- $_ = set $ipamRegionSet .locale true }}
+  {{- end }}
 {{ end }}
 {{ range $ipv6ULAPools }}
-  {{- $_ = set $ipamRegionSet (.region | default .locale | default $region) true }}
+  {{- $_ = set $ipamRegionSet (.region | default $region) true }}
+  {{- if .locale }}
+    {{- $_ = set $ipamRegionSet .locale true }}
+  {{- end }}
 {{ end }}
 {{ range $ipv6GUAPools }}
-  {{- $_ = set $ipamRegionSet (.region | default .locale | default $region) true }}
+  {{- $_ = set $ipamRegionSet (.region | default $region) true }}
+  {{- if .locale }}
+    {{- $_ = set $ipamRegionSet .locale true }}
+  {{- end }}
 {{ end }}
 {{ $ipamRegionList := sortAlpha (keys $ipamRegionSet) }}
